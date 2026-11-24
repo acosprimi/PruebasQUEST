@@ -6,24 +6,10 @@
    540,
    15432,
    0
-  ],
-  "equilibrada": [
-   "/images/arenas/static/bosque-del-alba.webp",
-   960,
-   540,
-   15432,
-   0
   ]
  },
  "/images/arenas/static/puente-del-rio": {
   "alta": [
-   "/images/arenas/static/puente-del-rio.webp",
-   960,
-   540,
-   8352,
-   0
-  ],
-  "equilibrada": [
    "/images/arenas/static/puente-del-rio.webp",
    960,
    540,
@@ -38,24 +24,10 @@
    540,
    8440,
    0
-  ],
-  "equilibrada": [
-   "/images/arenas/static/puerta-real.webp",
-   960,
-   540,
-   8440,
-   0
   ]
  },
  "/images/arenas/static/torre-del-viento": {
   "alta": [
-   "/images/arenas/static/torre-del-viento.webp",
-   960,
-   540,
-   6436,
-   0
-  ],
-  "equilibrada": [
    "/images/arenas/static/torre-del-viento.webp",
    960,
    540,
@@ -69,13 +41,6 @@
    2172,
    724,
    1275459,
-   1
-  ],
-  "equilibrada": [
-   "/images/jefes/real/aliento-fuego.webp",
-   2172,
-   724,
-   387980,
    1
   ],
   "lite": [
@@ -94,13 +59,6 @@
    1205119,
    1
   ],
-  "equilibrada": [
-   "/images/jefes/rio/ola-venenosa.webp",
-   2172,
-   724,
-   343094,
-   1
-  ],
   "lite": [
    "/images/jefes/rio/ola-venenosa-lite.webp",
    1303,
@@ -117,13 +75,6 @@
    1185499,
    1
   ],
-  "equilibrada": [
-   "/images/jefes/viento/relampago-tormenta.webp",
-   1024,
-   1536,
-   110138,
-   1
-  ],
   "lite": [
    "/images/jefes/viento/relampago-tormenta-lite.webp",
    614,
@@ -134,13 +85,6 @@
  },
  "/images/personajes-mate/caballero/anticipacion": {
   "alta": [
-   "/images/personajes-mate/caballero/anticipacion.webp",
-   346,
-   296,
-   26474,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/caballero/anticipacion.webp",
    346,
    296,
@@ -163,13 +107,6 @@
    139022,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/caida.webp",
-   512,
-   512,
-   27756,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/caida-lite.webp",
    307,
@@ -186,13 +123,6 @@
    158427,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/dolor.webp",
-   512,
-   512,
-   30190,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/dolor-lite.webp",
    307,
@@ -203,13 +133,6 @@
  },
  "/images/personajes-mate/caballero/esquiva": {
   "alta": [
-   "/images/personajes-mate/caballero/esquiva.webp",
-   333,
-   328,
-   25326,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/caballero/esquiva.webp",
    333,
    328,
@@ -232,13 +155,6 @@
    32086,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/final-1.webp",
-   301,
-   367,
-   32086,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/final-1-lite.webp",
    181,
@@ -249,13 +165,6 @@
  },
  "/images/personajes-mate/caballero/final-2": {
   "alta": [
-   "/images/personajes-mate/caballero/final-2.webp",
-   393,
-   366,
-   34556,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/caballero/final-2.webp",
    393,
    366,
@@ -278,13 +187,6 @@
    27092,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/final-3.webp",
-   361,
-   280,
-   27092,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/final-3-lite.webp",
    217,
@@ -295,13 +197,6 @@
  },
  "/images/personajes-mate/caballero/golpeado": {
   "alta": [
-   "/images/personajes-mate/caballero/golpeado.webp",
-   390,
-   345,
-   29386,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/caballero/golpeado.webp",
    390,
    345,
@@ -324,13 +219,6 @@
    26316,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/guardia.webp",
-   320,
-   302,
-   26316,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/guardia-lite.webp",
    192,
@@ -345,13 +233,6 @@
    512,
    512,
    236309,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/impacto-barrido.webp",
-   512,
-   512,
-   41128,
    1
   ],
   "lite": [
@@ -370,13 +251,6 @@
    242232,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/impacto-escudo.webp",
-   512,
-   512,
-   46038,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/impacto-escudo-lite.webp",
    307,
@@ -391,13 +265,6 @@
    512,
    512,
    171683,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/impacto-fenix.webp",
-   512,
-   512,
-   32306,
    1
   ],
   "lite": [
@@ -416,13 +283,6 @@
    207311,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/impacto-hachazo.webp",
-   512,
-   512,
-   34970,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/impacto-hachazo-lite.webp",
    307,
@@ -437,13 +297,6 @@
    512,
    512,
    160658,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/impacto-rayo.webp",
-   512,
-   512,
-   29224,
    1
   ],
   "lite": [
@@ -462,13 +315,6 @@
    222892,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/preparacion-barrido.webp",
-   512,
-   512,
-   41108,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/preparacion-barrido-lite.webp",
    307,
@@ -483,13 +329,6 @@
    512,
    512,
    207067,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/preparacion-escudo.webp",
-   512,
-   512,
-   39066,
    1
   ],
   "lite": [
@@ -508,13 +347,6 @@
    169583,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/preparacion-fenix.webp",
-   512,
-   512,
-   32070,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/preparacion-fenix-lite.webp",
    307,
@@ -529,13 +361,6 @@
    512,
    512,
    193929,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/preparacion-hachazo.webp",
-   512,
-   512,
-   34506,
    1
   ],
   "lite": [
@@ -554,13 +379,6 @@
    180503,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/preparacion-rayo.webp",
-   512,
-   512,
-   33516,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/preparacion-rayo-lite.webp",
    307,
@@ -575,13 +393,6 @@
    512,
    512,
    172152,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/recuperacion.webp",
-   512,
-   512,
-   34844,
    1
   ],
   "lite": [
@@ -600,13 +411,6 @@
    183741,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/reposo.webp",
-   512,
-   512,
-   32758,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/reposo-lite.webp",
    307,
@@ -621,13 +425,6 @@
    512,
    512,
    211330,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/retroceso.webp",
-   512,
-   512,
-   37240,
    1
   ],
   "lite": [
@@ -646,13 +443,6 @@
    244637,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/salida-barrido.webp",
-   512,
-   512,
-   41278,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/salida-barrido-lite.webp",
    307,
@@ -667,13 +457,6 @@
    512,
    512,
    231987,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/salida-escudo.webp",
-   512,
-   512,
-   42298,
    1
   ],
   "lite": [
@@ -692,13 +475,6 @@
    227370,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/salida-hachazo.webp",
-   512,
-   512,
-   38950,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/salida-hachazo-lite.webp",
    307,
@@ -715,13 +491,6 @@
    237294,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/salida-magia.webp",
-   512,
-   512,
-   41328,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/salida-magia-lite.webp",
    307,
@@ -732,13 +501,6 @@
  },
  "/images/personajes-mate/caballero/sin-arma": {
   "alta": [
-   "/images/personajes-mate/caballero/sin-arma.webp",
-   572,
-   540,
-   48480,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/caballero/sin-arma.webp",
    572,
    540,
@@ -761,13 +523,6 @@
    167704,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/caballero/tambaleo.webp",
-   512,
-   512,
-   32866,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/caballero/tambaleo-lite.webp",
    307,
@@ -778,13 +533,6 @@
  },
  "/images/personajes-mate/grifo/ataque": {
   "alta": [
-   "/images/personajes-mate/grifo/ataque.webp",
-   493,
-   271,
-   40912,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/grifo/ataque.webp",
    493,
    271,
@@ -807,13 +555,6 @@
    142860,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/caida.webp",
-   560,
-   512,
-   27030,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/grifo/caida-lite.webp",
    336,
@@ -824,13 +565,6 @@
  },
  "/images/personajes-mate/grifo/carga-1": {
   "alta": [
-   "/images/personajes-mate/grifo/carga-1.webp",
-   351,
-   274,
-   35086,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/grifo/carga-1.webp",
    351,
    274,
@@ -853,13 +587,6 @@
    78190,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/carga-2.webp",
-   471,
-   457,
-   78190,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/grifo/carga-2-lite.webp",
    283,
@@ -870,13 +597,6 @@
  },
  "/images/personajes-mate/grifo/derrota-1": {
   "alta": [
-   "/images/personajes-mate/grifo/derrota-1.webp",
-   458,
-   359,
-   55556,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/grifo/derrota-1.webp",
    458,
    359,
@@ -899,13 +619,6 @@
    26506,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/derrota-2.webp",
-   428,
-   246,
-   26506,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/grifo/derrota-2-lite.webp",
    257,
@@ -920,13 +633,6 @@
    560,
    512,
    183288,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/dolor.webp",
-   560,
-   512,
-   36496,
    1
   ],
   "lite": [
@@ -945,13 +651,6 @@
    228935,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/impacto.webp",
-   560,
-   512,
-   41324,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/grifo/impacto-lite.webp",
    336,
@@ -966,13 +665,6 @@
    560,
    512,
    214120,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/preparacion.webp",
-   560,
-   512,
-   38974,
    1
   ],
   "lite": [
@@ -991,13 +683,6 @@
    198397,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/recuperacion.webp",
-   560,
-   512,
-   39534,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/grifo/recuperacion-lite.webp",
    336,
@@ -1012,13 +697,6 @@
    560,
    512,
    181317,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/reposo.webp",
-   560,
-   512,
-   33670,
    1
   ],
   "lite": [
@@ -1037,13 +715,6 @@
    217819,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/retroceso.webp",
-   560,
-   512,
-   40610,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/grifo/retroceso-lite.webp",
    336,
@@ -1060,13 +731,6 @@
    173602,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/grifo/tambaleo.webp",
-   560,
-   512,
-   31854,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/grifo/tambaleo-lite.webp",
    336,
@@ -1077,13 +741,6 @@
  },
  "/images/personajes-mate/real/ataque": {
   "alta": [
-   "/images/personajes-mate/real/ataque.webp",
-   560,
-   512,
-   88350,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/real/ataque.webp",
    560,
    512,
@@ -1106,13 +763,6 @@
    148815,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/real/caida.webp",
-   560,
-   512,
-   32322,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/real/caida-lite.webp",
    336,
@@ -1123,13 +773,6 @@
  },
  "/images/personajes-mate/real/carga-1": {
   "alta": [
-   "/images/personajes-mate/real/carga-1.webp",
-   560,
-   512,
-   109154,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/real/carga-1.webp",
    560,
    512,
@@ -1152,13 +795,6 @@
    107272,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/real/carga-2.webp",
-   560,
-   512,
-   107272,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/real/carga-2-lite.webp",
    336,
@@ -1173,13 +809,6 @@
    560,
    512,
    236556,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/real/dolor.webp",
-   560,
-   512,
-   50756,
    1
   ],
   "lite": [
@@ -1198,13 +827,6 @@
    258357,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/real/impacto.webp",
-   560,
-   512,
-   48006,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/real/impacto-lite.webp",
    336,
@@ -1219,13 +841,6 @@
    560,
    512,
    237769,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/real/preparacion.webp",
-   560,
-   512,
-   44790,
    1
   ],
   "lite": [
@@ -1244,13 +859,6 @@
    240607,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/real/recuperacion.webp",
-   560,
-   512,
-   51618,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/real/recuperacion-lite.webp",
    336,
@@ -1265,13 +873,6 @@
    560,
    512,
    204136,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/real/reposo.webp",
-   560,
-   512,
-   37922,
    1
   ],
   "lite": [
@@ -1290,13 +891,6 @@
    236944,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/real/retroceso.webp",
-   560,
-   512,
-   43560,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/real/retroceso-lite.webp",
    336,
@@ -1313,13 +907,6 @@
    197858,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/real/tambaleo.webp",
-   560,
-   512,
-   43914,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/real/tambaleo-lite.webp",
    336,
@@ -1330,13 +917,6 @@
  },
  "/images/personajes-mate/rio/ataque": {
   "alta": [
-   "/images/personajes-mate/rio/ataque.webp",
-   560,
-   512,
-   111154,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/rio/ataque.webp",
    560,
    512,
@@ -1359,13 +939,6 @@
    128742,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/caida.webp",
-   560,
-   512,
-   26630,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/rio/caida-lite.webp",
    336,
@@ -1376,13 +949,6 @@
  },
  "/images/personajes-mate/rio/carga-1": {
   "alta": [
-   "/images/personajes-mate/rio/carga-1.webp",
-   560,
-   512,
-   121568,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/rio/carga-1.webp",
    560,
    512,
@@ -1405,13 +971,6 @@
    135732,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/carga-2.webp",
-   560,
-   512,
-   135732,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/rio/carga-2-lite.webp",
    336,
@@ -1426,13 +985,6 @@
    560,
    512,
    199054,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/dolor.webp",
-   560,
-   512,
-   42668,
    1
   ],
   "lite": [
@@ -1451,13 +1003,6 @@
    225126,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/impacto.webp",
-   560,
-   512,
-   42914,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/rio/impacto-lite.webp",
    336,
@@ -1472,13 +1017,6 @@
    560,
    512,
    240976,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/preparacion.webp",
-   560,
-   512,
-   45360,
    1
   ],
   "lite": [
@@ -1497,13 +1035,6 @@
    178082,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/recuperacion.webp",
-   560,
-   512,
-   39080,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/rio/recuperacion-lite.webp",
    336,
@@ -1518,13 +1049,6 @@
    560,
    512,
    227986,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/reposo.webp",
-   560,
-   512,
-   44042,
    1
   ],
   "lite": [
@@ -1543,13 +1067,6 @@
    245217,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/retroceso.webp",
-   560,
-   512,
-   47586,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/rio/retroceso-lite.webp",
    336,
@@ -1566,13 +1083,6 @@
    196607,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/rio/tambaleo.webp",
-   560,
-   512,
-   38486,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/rio/tambaleo-lite.webp",
    336,
@@ -1583,13 +1093,6 @@
  },
  "/images/personajes-mate/viento/ataque": {
   "alta": [
-   "/images/personajes-mate/viento/ataque.webp",
-   560,
-   512,
-   115068,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/viento/ataque.webp",
    560,
    512,
@@ -1612,13 +1115,6 @@
    157278,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/caida.webp",
-   560,
-   512,
-   31496,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/viento/caida-lite.webp",
    336,
@@ -1629,13 +1125,6 @@
  },
  "/images/personajes-mate/viento/carga-1": {
   "alta": [
-   "/images/personajes-mate/viento/carga-1.webp",
-   560,
-   512,
-   101914,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/viento/carga-1.webp",
    560,
    512,
@@ -1658,13 +1147,6 @@
    152606,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/carga-2.webp",
-   560,
-   512,
-   152606,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/viento/carga-2-lite.webp",
    336,
@@ -1681,13 +1163,6 @@
    218183,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/dolor.webp",
-   560,
-   512,
-   43474,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/viento/dolor-lite.webp",
    336,
@@ -1698,13 +1173,6 @@
  },
  "/images/personajes-mate/viento/gigante": {
   "alta": [
-   "/images/personajes-mate/viento/gigante.webp",
-   658,
-   720,
-   121414,
-   1
-  ],
-  "equilibrada": [
    "/images/personajes-mate/viento/gigante.webp",
    658,
    720,
@@ -1727,13 +1195,6 @@
    280974,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/impacto.webp",
-   560,
-   512,
-   55894,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/viento/impacto-lite.webp",
    336,
@@ -1748,13 +1209,6 @@
    560,
    512,
    274409,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/preparacion.webp",
-   560,
-   512,
-   53166,
    1
   ],
   "lite": [
@@ -1773,13 +1227,6 @@
    287759,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/recuperacion.webp",
-   560,
-   512,
-   57650,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/viento/recuperacion-lite.webp",
    336,
@@ -1794,13 +1241,6 @@
    560,
    512,
    183646,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/reposo.webp",
-   560,
-   512,
-   31444,
    1
   ],
   "lite": [
@@ -1819,13 +1259,6 @@
    245928,
    1
   ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/retroceso.webp",
-   560,
-   512,
-   51052,
-   1
-  ],
   "lite": [
    "/images/personajes-mate/viento/retroceso-lite.webp",
    336,
@@ -1840,13 +1273,6 @@
    560,
    512,
    232884,
-   1
-  ],
-  "equilibrada": [
-   "/images/personajes-mate/viento/tambaleo.webp",
-   560,
-   512,
-   45502,
    1
   ],
   "lite": [
@@ -1865,13 +1291,6 @@
    1682197,
    1
   ],
-  "equilibrada": [
-   "/images/transiciones/cinta-nombre.webp",
-   2172,
-   724,
-   386626,
-   1
-  ],
   "lite": [
    "/images/transiciones/cinta-nombre-lite.webp",
    1303,
@@ -1886,13 +1305,6 @@
    1448,
    1086,
    1583881,
-   1
-  ],
-  "equilibrada": [
-   "/images/transiciones/emblema-vs.webp",
-   1448,
-   1086,
-   431370,
    1
   ],
   "lite": [

@@ -1,7 +1,7 @@
 <!--
   HomeOptions.vue - VENTANA "OPCIONES"
   Se abre y se cierra desde fuera con v-model:  <HomeOptions v-model="showOptions" />
-  Idioma, calidad gráfica (Automático / Alta / Equilibrada / Lite), accesibilidad y volumen por canal.
+  Idioma, calidad gráfica (Alta / Lite), accesibilidad y volumen por canal.
   Los ajustes de accesibilidad y audio no dependen del perfil gráfico y se guardan en el almacenamiento local.
 -->
 <template>
@@ -19,16 +19,13 @@
         <p class="text-subtitle-1 mt-5 mb-2">{{ t('Calidad gráfica') }}</p>
         <v-btn-toggle :model-value="qualityMode" mandatory color="amber-lighten-2" divided
           :aria-label="t('Selector de calidad gráfica')" @update:model-value="setQualityMode">
-          <v-btn value="auto">{{ t('Automático') }}</v-btn>
-          <v-btn value="alta">{{ t('Alta') }}</v-btn>
-          <v-btn value="equilibrada">{{ t('Equilibrada') }}</v-btn>
-          <v-btn value="lite">Lite</v-btn>
+          <v-btn value="alta">{{ t('Gráficos altos') }}</v-btn>
+          <v-btn value="lite">{{ t('Gráficos Lite') }}</v-btn>
         </v-btn-toggle>
         <p class="text-caption mt-2">
           {{ t('Perfil en uso') }}: <strong>{{ t(nombres[quality]) }}</strong>.
           {{ t('Si lo cambias durante una batalla, se aplica entre rondas sin perder el estado de la partida.') }}
         </p>
-        <v-btn v-if="qualityMode === 'auto' && ajustes.calidadAuto !== 'equilibrada'" size="small" variant="text" @click="reevaluarAutomatico">{{ t('Volver a evaluar la calidad') }}</v-btn>
 
         <p class="text-subtitle-1 mt-5 mb-2">{{ t('Accesibilidad') }}</p>
         <div class="ajuste">
@@ -77,11 +74,11 @@ const open = defineModel({ type: Boolean, default: false })
 defineProps({ progreso: { type: Boolean, default: false } })
 const emit = defineEmits(['estadisticas'])
 const { language, t } = useLanguage()
-const { quality, qualityMode, setQualityMode, reevaluarAutomatico } = useGameGraphics()
+const { quality, qualityMode, setQualityMode } = useGameGraphics()
 const store = usePlayerProgress()
 const ajustes = computed(() => store.estado.ajustes)
 const cambiar = (cambios) => store.ajustar(cambios)
-const nombres = { alta: 'Alta', equilibrada: 'Equilibrada', lite: 'Lite' }
+const nombres = { alta: 'Gráficos altos', lite: 'Gráficos Lite' }
 const canales = [{ id: 'musica', nombre: 'Música' }, { id: 'efectos', nombre: 'Efectos' }, { id: 'voces', nombre: 'Voces' }]
 </script>
 

@@ -29,7 +29,7 @@ watch(audioEnPrimerPlano, (reproducirVoz) => {
 watch(() => progreso.estado.ajustes.volumen.musica, aplicarVolumenMusica)
 
 onMounted(() => {
-  audio.value = new Audio(props.ruta)
+  audio.value = new Audio(rutaAudio(props.ruta))
   audio.value.loop = true
   registrarMusica(audio.value, props.volumen)
   if (!audioEnPrimerPlano.value) {

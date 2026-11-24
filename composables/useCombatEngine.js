@@ -1,6 +1,6 @@
 // Reglas del combate de English Quest, separadas de su representación gráfica.
 //
-// CombatDesafio.vue (y las escenas Alta, Equilibrada y Lite) solo dibujan lo que este módulo decide.
+// CombatDesafio.vue (y las escenas Alta y Lite) solo dibujan lo que este módulo decide.
 // Las animaciones avisan «impactar» y «terminar» por comodidad visual, pero la lógica no depende de ellas:
 // una vigilancia propia aplica cada golpe exactamente una vez aunque la animación se interrumpa,
 // tarde o esté desactivada (movimiento reducido, pestaña en segundo plano, escena cambiada).
@@ -184,7 +184,7 @@ export function useCombatEngine({
 
   // --- Pausa segura: solo mientras el estudiante piensa. Ningún golpe está en marcha, así que no se pierde progreso.
   const puedePausar = computed(() => fase.value === 'pregunta')
-  function pausar() { if (puedePausar.value) pausado.value = true }
+  function pausar() { if (puedePausar.value) { reloj.tick(); pausado.value = true } } // tick: contabiliza lo transcurrido antes de detener
   function reanudar() { if (pausado.value) { pausado.value = false; reloj.reiniciarReferencia() } }
 
   function agotar() {
@@ -220,8 +220,10 @@ export function useCombatEngine({
   }
   function ganarFuria() { furia.value = Math.min(FURIA_MAXIMA, furia.value + 1) }
 
+  // Con pausa manual o ayuda abierta no se aceptan respuestas, cortes ni golpes (el reloj tampoco avanza).
+  const entradaBloqueada = () => pausado.value || ayudaAbierta.value
   function responder(opcion) {
-    if (fase.value !== 'pregunta') return
+    if (fase.value !== 'pregunta' || entradaBloqueada()) return
     respuesta.value = opcion
     agotado.value = false
     const { correcta, alternativas = [] } = pregunta.value
@@ -234,7 +236,7 @@ export function useCombatEngine({
   }
 
   function resolverConjuro(opcion) {
-    if (fase.value !== 'pregunta') return
+    if (fase.value !== 'pregunta' || entradaBloqueada()) return
     reloj.parar()
     respuesta.value = opcion
     agotado.value = false
@@ -273,7 +275,7 @@ export function useCombatEngine({
   }
 
   function cortarAtaque() {
-    if (!rondaHacha.value || fase.value !== 'pregunta') return
+    if (!rondaHacha.value || fase.value !== 'pregunta' || entradaBloqueada()) return
     reloj.parar()
     respuesta.value = pregunta.value.correcta
     agotado.value = false
@@ -287,13 +289,13 @@ export function useCombatEngine({
   }
 
   function esquivar(lado) {
-    if (fase.value !== 'pregunta') return
+    if (fase.value !== 'pregunta' || entradaBloqueada()) return
     respuesta.value = lado === 'izquierda' ? 'Move left.' : 'Move right.'
     lanzarColetazo(lado !== pregunta.value.lado, lado === 'izquierda' ? -15 : 15)
   }
 
   function completarAviso(ficha) {
-    if (fase.value !== 'pregunta') return
+    if (fase.value !== 'pregunta' || entradaBloqueada()) return
     respuesta.value = ficha
     const esquivado = ficha === pregunta.value.correcta
     lanzarColetazo(esquivado, esquivado ? -15 : 0)
@@ -304,7 +306,7 @@ export function useCombatEngine({
   }
 
   function aplicarPalabra(destino) {
-    if (fase.value !== 'pregunta') return
+    if (fase.value !== 'pregunta' || entradaBloqueada()) return
     if (destino === 'heroe') {
       const recuperado = Math.min(100 - vidaCaballero.value, CURACION_PALABRA)
       vidaCaballero.value += recuperado
@@ -318,11 +320,11 @@ export function useCombatEngine({
   }
 
   function palabraIncorrecta(destino) {
-    if (fase.value === 'pregunta') mostrarEfectoPalabra(destino, 'error', t('Prueba con el otro personaje'))
+    if (fase.value === 'pregunta' && !entradaBloqueada()) mostrarEfectoPalabra(destino, 'error', t('Prueba con el otro personaje'))
   }
 
   function completarPalabras() {
-    if (fase.value !== 'pregunta') return
+    if (fase.value !== 'pregunta' || entradaBloqueada()) return
     respuesta.value = pregunta.value.correcta
     registrar(true, { agotado: false })
     ganarFuria()
@@ -548,6 +550,8 @@ export function useCombatEngine({
     iniciar, destruir, reiniciarReferencia, pausar, reanudar, responder, resolverConjuro, cortarAtaque, esquivar, completarAviso,
     aplicarPalabra, palabraIncorrecta, completarPalabras, atacar, probarRemate, impactar, terminarAtaque, parar: parada,
     teclaParada, siguiente, agotar, resumen, danoDisponible, fuerza, reloj,
+    // referencia temporal compartida con las actividades (proyectiles, colisiones)
+    tiempoActivo: () => reloj.tiempoActivo(), relojDetenido: () => reloj.detenido(),
     ataques: ATAQUES, FURIA_MAXIMA
   }
 }

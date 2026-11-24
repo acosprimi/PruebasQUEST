@@ -63,9 +63,10 @@
                   :key="indice" :pregunta="pregunta" @responder="responder" />
                 <CombatHacha v-if="rondaHacha && ['pregunta', 'intercepcion'].includes(fase)"
                   :key="indice" :pregunta="pregunta" :nivel="nivel.numero"
-                  :restante="tiempoRestante" :total="tiempoTotal" :pausado="pausado" :sin-limite="sinLimite" @cortar="cortarAtaque" />
+                  :restante="tiempoRestante" :total="tiempoTotal" :pausado="pausado" :sin-limite="sinLimite"
+                  :tiempo-activo="motor.tiempoActivo" :detenido="motor.relojDetenido" @cortar="cortarAtaque" />
                 <CombatCortar v-if="rondaCortes && ['pregunta', 'elegir'].includes(fase)"
-                  :key="indice" :pregunta="pregunta" @responder="responder" />
+                  :key="indice" :pregunta="pregunta" :detenido="motor.relojDetenido" @responder="responder" />
                 <CombatClasificar v-if="fase === 'pregunta' && pregunta.tipo === 'clasificar'" :key="indice" :pregunta="pregunta"
                   @impacto="aplicarPalabra" @error="palabraIncorrecta" @completar="completarPalabras" />
                 <CombatConjuro v-if="rondaConjuro && ['invocacion', 'pregunta', 'conjuro'].includes(fase)"
@@ -153,9 +154,9 @@
           <p class="retro"><b>{{ t(retro.acierto ? 'Por qué es correcta' : 'Qué pasó') }}</b> {{ pregunta.explicacion }}</p>
           <p v-if="retro.regla" class="retro"><b>{{ t('Regla para repasar') }}</b> {{ t(retro.regla) }}</p>
           <p v-if="retro.consejo" class="retro"><b>{{ t('Cómo resolver algo parecido') }}</b> {{ t(retro.consejo) }}</p>
-          <p v-if="recomendacion && modoCalidad !== 'auto'" class="retro aviso-calidad" role="status">
+          <p v-if="recomendacion" class="retro aviso-calidad" role="status">
             {{ t('El juego ha perdido fluidez. ¿Quieres usar una calidad gráfica inferior?') }}
-            <v-btn size="small" variant="tonal" @click="aplicarSugerencia">{{ t('Bajar calidad') }}</v-btn>
+            <v-btn size="small" variant="tonal" @click="aplicarSugerencia">{{ t('Cambiar a Lite') }}</v-btn>
             <v-btn size="small" variant="text" @click="descartarRecomendacion">{{ t('Ahora no') }}</v-btn>
           </p>
           <p v-if="aviso" class="retro aviso-calidad" role="status">{{ aviso }}</p>
@@ -228,7 +229,7 @@ import lecciones from '~/data/lecciones.json'
 const props = defineProps({ nivel: { type: Object, required: true } })
 const emit = defineEmits(['victoria', 'volver', 'reintentar'])
 const { t } = useLanguage()
-const { quality, recomendacion, aplicarRecomendacion, descartarRecomendacion, modoCalidad } = useGameGraphics()
+const { quality, recomendacion, aplicarRecomendacion, descartarRecomendacion } = useGameGraphics()
 const progreso = usePlayerProgress()
 
 // La escena pesada y la Lite son módulos distintos: solo se descarga y monta la que corresponde al perfil.
@@ -359,14 +360,6 @@ watch([quality, momentoSeguro], () => {
   if (momentoSeguro.value && perfilEscena.value !== quality.value) perfilEscena.value = quality.value
 })
 function aplicarSugerencia() { aplicarRecomendacion(); aviso.value = '' }
-watch([momentoSeguro, recomendacion], () => {
-  if (!momentoSeguro.value || !recomendacion.value) return
-  if (modoCalidad.value === 'auto') {
-    aplicarRecomendacion()
-    aviso.value = t('La calidad gráfica se ajustó automáticamente para mantener la fluidez.')
-  }
-})
-
 function teclaGlobal(evento) {
   if (evento.key === 'Escape') { pausado.value ? motor.reanudar() : motor.pausar(); return }
   motor.teclaParada(evento)

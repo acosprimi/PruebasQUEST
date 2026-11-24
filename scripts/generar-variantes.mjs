@@ -6,9 +6,10 @@
 // Requiere ImageMagick (convert / identify). Es solo una herramienta de desarrollo: el juego no la usa en ejecución.
 //
 // Reglas de variantes (por «tallo» de archivo, es decir, la ruta sin extensión ni sufijo -lite):
-//   alta        → el original (png si existe, si no webp)
-//   equilibrada → el .webp con el mismo tamaño que el original (o el original si no hay)
-//   lite        → «-lite.webp» a 60 % del tamaño del .webp (misma proporción, alfa conservado)
+//   alta → el original (png si existe, si no webp), sin ninguna conversión destructiva
+//   lite → «-lite.webp» a 60 % del tamaño del original (misma proporción, alfa conservado)
+// Solo existen estos dos perfiles. Los .webp de tamaño completo que acompañaban a un .png eran exclusivos del antiguo
+// perfil Equilibrada: --eliminar-obsoletos los borra si no hay ninguna referencia literal a ellos.
 // El manifiesto data/variantes-imagenes.json lista únicamente variantes que existen: el juego nunca pide otra.
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, rmSync } from 'node:fs'
@@ -56,6 +57,12 @@ function referenciado(tallo) {
   if (tallo.includes('/arenas/static/')) return true
   return fuentes.includes(tallo.replace(join(publico), '')) || new RegExp(`['"\`/]${base.replace(/[-]/g, '[-]')}(['"\`.]|-lite)`).test(fuentes)
 }
+// .webp completos con .png hermano: exclusivos del antiguo perfil Equilibrada (Alta usa el png, Lite su -lite.webp)
+const paresEquilibrada = [...tallos.values()].filter((t) => t.png && t.webp && !fuentes.includes(url(t.webp)) && !fuentes.includes(url(t.webp).split('/').pop()))
+if (paresEquilibrada.length) {
+  console.log(`WebP exclusivos de Equilibrada (${paresEquilibrada.length})`)
+  if (eliminarObsoletos) { for (const t of paresEquilibrada) { rmSync(t.webp); delete t.webp } console.log('Eliminados.') }
+}
 const obsoletos = [...tallos.keys()].filter((t) => !referenciado(t))
 if (obsoletos.length) {
   console.log(`Sin referencias (${obsoletos.length}): ${obsoletos.map((t) => url(t)).join(', ')}`)
@@ -86,9 +93,8 @@ if (!soloVerificar) {
 const manifiesto = {}
 for (const [tallo, t] of [...tallos].sort(([a], [b]) => a.localeCompare(b))) {
   const alta = t.png ?? t.webp
-  const equilibrada = t.webp ?? t.png
   if (!alta) continue
-  const variantes = { alta, equilibrada }
+  const variantes = { alta }
   if (t.lite) variantes.lite = t.lite
   const entrada = {}
   for (const [perfil, archivo] of Object.entries(variantes)) {
@@ -114,8 +120,8 @@ else if (!existsSync(salida) || JSON.stringify(JSON.parse(readFileSync(salida, '
   errores.push('data/variantes-imagenes.json no coincide con public/images (ejecuta el script sin --verificar)')
 }
 
-const resumen = { alta: 0, equilibrada: 0, lite: 0 }
-const memoria = { alta: 0, equilibrada: 0, lite: 0 }
+const resumen = { alta: 0, lite: 0 }
+const memoria = { alta: 0, lite: 0 }
 for (const e of Object.values(manifiesto)) for (const [p, [, w, h, b]] of Object.entries(e)) { resumen[p] += b; memoria[p] += w * h * 4 }
 const mb = (n) => (n / 1048576).toFixed(2) + ' MB'
 console.log(`${Object.keys(manifiesto).length} recursos · ${generadas} variantes lite generadas`)

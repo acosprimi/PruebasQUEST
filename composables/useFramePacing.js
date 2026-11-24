@@ -1,8 +1,8 @@
 // Detección de problemas SOSTENIDOS de fluidez. Un tirón aislado no cambia nada: hacen falta varias
 // ventanas de observación seguidas (o la mayoría de las últimas) con fotogramas lentos.
 // No usa la RAM, el modelo ni la resolución del dispositivo: solo lo que se observa en la sesión.
-export const ORDEN_PERFILES = ['alta', 'equilibrada', 'lite']
-export const perfilInferior = (perfil) => ORDEN_PERFILES[ORDEN_PERFILES.indexOf(perfil) + 1] ?? null
+export const ORDEN_PERFILES = ['alta', 'lite']
+export const perfilInferior = (perfil) => (ORDEN_PERFILES.includes(perfil) ? ORDEN_PERFILES[ORDEN_PERFILES.indexOf(perfil) + 1] ?? null : null)
 export const VENTANA_MS = 2000
 
 // Resume una ventana de duraciones de fotograma (ms). tareasLargasMs: suma de tareas largas medidas en la ventana.
@@ -36,7 +36,7 @@ export function crearDetector({ minimoMuestras = 20, seguidas = 3, ventanaHistor
 }
 
 // Medidor para componentes: un solo requestAnimationFrame que solo acumula números. La recomendación se publica
-// mediante useGameGraphics().recomendar, que decide si se aplica (automático) o se ofrece (manual).
+// mediante useGameGraphics().recomendar. Solo se ofrece cambiar de Alta a Lite: nunca se cambia sola la calidad.
 export function useFramePacing(enabled) {
   const { quality, recomendar } = useGameGraphics()
   const sugerir = ref(false)

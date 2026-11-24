@@ -10,12 +10,12 @@
           :aria-label="t(sinArma ? 'Caballero sin arma' : 'Caballero con hacha y escudo solar')">
           <span v-if="furia" class="aura-lite" />
           <span v-if="bloqueando" class="barrera-bloqueo"><b>{{ t('¡Bloqueado!') }}</b></span>
-          <img v-if="srcCaballero" class="pose" :style="estiloPose('caballero', poseCaballero)" :src="srcCaballero" alt="" draggable="false" />
+          <img v-if="visual.caballero" class="pose" :style="visual.caballero.estilo" :src="visual.caballero.src" :width="visual.caballero.ancho" :height="visual.caballero.alto" alt="" draggable="false" />
         </div>
         <div class="luchador guardian" data-destino-palabra="monstruo" :class="claseGuardian" role="img" :aria-label="nivel.guardian">
           <span v-if="enfurecido" class="aura-lite ira" />
-          <img v-if="srcGuardian" class="pose" :style="estiloPose(carpetaGuardian, poseGuardian)" :src="srcGuardian" alt="" draggable="false" />
-          <img v-if="ataqueRival && chorro && !ladoGolpe" class="chorro" :class="`chorro-${nivel.numero}`" :style="estiloPose(carpetaGuardian, 'ataque')" :src="imageUrl(chorro, 'lite')" alt="" draggable="false" />
+          <img v-if="visual.guardian" class="pose" :style="visual.guardian.estilo" :src="visual.guardian.src" :width="visual.guardian.ancho" :height="visual.guardian.alto" alt="" draggable="false" />
+          <img v-if="ataqueRival && chorro && !ladoGolpe" class="chorro" :class="`chorro-${nivel.numero}`" :style="estiloPose(carpetaGuardian, 'ataque')" :src="srcChorro" alt="" draggable="false" />
         </div>
         <span v-if="ataque?.final" class="rotulo-final">{{ ataque.nombre }}</span>
         <template v-if="ataque">
@@ -39,10 +39,11 @@
 
 <script setup>
 import medidasPoses from '~/data/medidas-poses.json'
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, shallowReactive, onMounted, onBeforeUnmount } from 'vue'
+import { medidasDe, PRIORIDAD } from '~/composables/useAssetManager.js'
 
 const { t } = useLanguage()
-const { imageUrl, levelBackground, prepareImages, assets, levelEssentials } = useGameGraphics()
+const { imageUrl, levelBackground, prepareImages, assets, levelPriorities } = useGameGraphics()
 const props = defineProps({
   nivel: { type: Object, required: true },
   ataque: { type: Object, default: null },
@@ -67,10 +68,12 @@ const fondo = computed(() => levelBackground(props.nivel, 'lite'))
 const carpetaGuardian = computed(() => props.nivel.arte.split('/').pop())
 const chorros = { 2: '/images/jefes/rio/ola-venenosa.png', 4: '/images/jefes/real/aliento-fuego.png' }
 const chorro = computed(() => chorros[props.nivel.numero])
+// Medidas de data/medidas-poses.json. Si una pose no tuviera medida se usa la de reposo (nunca se rompe el render).
 function estiloPose(personaje, pose) {
-  const m = medidasPoses[personaje][pose]
+  const m = medidasPoses[personaje]?.[pose] ?? medidasPoses[personaje]?.reposo ?? { ancho: 1, centro: 0.5, margenInferior: 0 }
   return { '--ancho-pose': m.ancho, '--centro-pose': m.centro, '--margen-inferior': m.margenInferior }
 }
+const srcChorro = computed(() => (chorro.value ? imageUrl(chorro.value, 'lite') : ''))
 
 // --- Estado derivado (mismas condiciones que la escena completa)
 const esperando = computed(() => props.carga !== null && !props.ataque)
@@ -107,20 +110,14 @@ function esperarVisible(fn, id) {
   if (document.hidden) { temporizadores.push(setTimeout(() => esperarVisible(fn, id), 250)); return }
   fn()
 }
-const audios = { transformacion: null, carga: null }
+// Clips de la transformación solar: pasan por el mezclador (volumen del canal, un solo elemento reutilizado, se detienen al salir).
+let clipsActivos = []
 function clip(nombre) {
-  const a = new Audio(`/audio/combate/solar-${nombre}.mp3`)
-  a.volume = 0.75 * volumenCanal('efectos')
-  audios[nombre] = a
-  return new Promise((resolve) => {
-    const fin = () => { clearTimeout(limite); resolve() }
-    const limite = setTimeout(fin, 12000)
-    a.addEventListener('ended', fin, { once: true })
-    a.addEventListener('error', fin, { once: true })
-    a.play().catch(fin)
-  })
+  const c = reproducirClipAudio(`/audio/combate/solar-${nombre}.mp3`)
+  clipsActivos.push(c)
+  return c.fin
 }
-function detenerAudio() { for (const k of Object.keys(audios)) { audios[k]?.pause(); audios[k] = null } }
+function detenerAudio() { clipsActivos.forEach((c) => c.detener()); clipsActivos = [] }
 
 watch(() => props.ataque, async (golpe) => {
   limpiar(); detenerAudio()
@@ -197,47 +194,59 @@ const claseGuardian = computed(() => ({
   golpe: fase.value === 'contacto' && props.ataque && !ataqueRival.value && props.danoAplicado > 0, esperando: esperando.value
 }))
 
-// --- Imagen visible: no se cambia hasta que la nueva pose está decodificada (evita parpadeos y descargas a mitad de golpe).
-const srcCaballero = ref('')
-const srcGuardian = ref('')
+// --- Pose visible de cada luchador: UN ÚNICO estado coherente { pose, src, ancho, alto, estilo }.
+// La imagen anterior se mantiene (sin parpadeo) hasta que la nueva está decodificada; entonces se cambian a la vez
+// la ruta, las dimensiones y las medidas de anclaje. Una solicitud antigua nunca pisa una pose más reciente.
+const visual = shallowReactive({ caballero: null, guardian: null })
+const turnoPose = { caballero: 0, guardian: 0 }
 let vivo = true
-async function mostrar(destino, deseada) {
+const ambito = () => `nivel-${props.nivel.numero}`
+function construirVisual(personaje, pose, url) {
+  const m = medidasDe(url)
+  return { pose, src: url, ancho: m?.ancho, alto: m?.alto, estilo: estiloPose(personaje, pose) }
+}
+async function mostrar(quien, personaje, carpeta, pose) {
+  const turno = ++turnoPose[quien]
+  const deseada = ruta(carpeta, pose)
   const url = imageUrl(deseada, 'lite')
-  if (assets.listo(deseada, 'lite')) { destino.value = url; return }
-  if (!destino.value) destino.value = url // primera imagen: se pide directamente
-  await assets.decodificar(url, `nivel-${props.nivel.numero}`)
-  const vigente = (destino === srcCaballero ? ruta(HEROE, poseCaballero.value) : ruta(props.nivel.arte, poseGuardian.value)) === deseada
-  if (vivo && vigente) destino.value = url
+  if (visual[quien]?.src === url) { visual[quien] = construirVisual(personaje, pose, url); return }
+  let ok = assets.listo(deseada, 'lite')
+  if (!ok) {
+    ok = await assets.decodificar(url, assets.abrirAmbito(ambito()), PRIORIDAD.ESENCIAL)
+    if (!vivo || turno !== turnoPose[quien]) return // llegó tarde: ya hay otra pose más reciente
+    if (!ok && visual[quien]) return // fallo de carga: se conserva la pose anterior completa y coherente
+  }
+  const anterior = visual[quien]?.src
+  assets.marcarVisible(url, true)
+  visual[quien] = construirVisual(personaje, pose, url)
+  if (anterior) assets.marcarVisible(anterior, false)
 }
-watch(poseCaballero, (p) => mostrar(srcCaballero, ruta(HEROE, p)), { immediate: true })
-watch(poseGuardian, (p) => mostrar(srcGuardian, ruta(props.nivel.arte, p)), { immediate: true })
+watch(poseCaballero, (p) => mostrar('caballero', 'caballero', HEROE, p), { immediate: true })
+watch(poseGuardian, (p) => mostrar('guardian', carpetaGuardian.value, props.nivel.arte, p), { immediate: true })
 
-// --- Precarga ligera del resto de poses, solo entre actividades (nunca mientras corre el reloj de una pregunta)
-const poses = {
-  [HEROE]: ['reposo', 'guardia', 'dolor', 'golpeado', 'esquiva', 'caida', 'anticipacion', 'final-1', 'final-2', 'final-3', 'sin-arma',
-    ...['hachazo', 'barrido', 'escudo', 'rayo', 'fenix'].flatMap((a) => [`preparacion-${a}`, `impacto-${a}`]),
-    'salida-hachazo', 'salida-barrido', 'salida-escudo', 'salida-magia']
-}
+// --- Precarga progresiva: próximas poses y luego las secundarias, solo entre actividades (nunca mientras corre el reloj
+// de una pregunta). Se cancela al desmontar; si el presupuesto no alcanza, el gestor omite las secundarias.
 let precargaViva = true
-let precargando = false
 async function precargar() {
-  if (precargando) return
-  precargando = true
+  const { proximas, secundarias } = levelPriorities(props.nivel)
   const lista = [
-    ...poses[HEROE].map((p) => ruta(HEROE, p)),
-    ...['reposo', 'preparacion', 'ataque', 'impacto', 'retroceso', 'tambaleo', 'recuperacion', 'dolor', 'caida', 'carga-1', 'carga-2', ...(props.nivel.derrota ? ['derrota-1', 'derrota-2'] : [])]
-      .map((p) => ruta(props.nivel.arte, p))
-  ].filter((r) => !assets.listo(r, 'lite'))
+    ...proximas.map((src) => ({ src, prioridad: PRIORIDAD.PROXIMA })),
+    ...(chorro.value ? [{ src: chorro.value, prioridad: PRIORIDAD.PROXIMA }] : []),
+    ...secundarias.map((src) => ({ src, prioridad: PRIORIDAD.SECUNDARIA }))
+  ].filter((r) => !assets.listo(r.src, 'lite'))
+  const token = assets.abrirAmbito(ambito())
   for (const r of lista) {
-    if (!precargaViva) break
     while (precargaViva && props.carga !== null && props.carga > 0) await new Promise((x) => setTimeout(x, 400))
-    await prepareImages([r], { ambito: `nivel-${props.nivel.numero}`, profile: 'lite', concurrencia: 1 })
+    if (!precargaViva) break
+    await prepareImages([r], { ambito: token, profile: 'lite', concurrencia: 1 })
     await new Promise((x) => setTimeout(x, 60))
   }
-  precargando = false
 }
 onMounted(() => { setTimeout(() => { if (precargaViva) precargar() }, 1200) })
-onBeforeUnmount(() => { vivo = false; precargaViva = false; limpiar(); detenerAudio() })
+onBeforeUnmount(() => {
+  vivo = false; precargaViva = false; limpiar(); detenerAudio()
+  for (const q of ['caballero', 'guardian']) if (visual[q]) assets.marcarVisible(visual[q].src, false)
+})
 </script>
 
 <style scoped>

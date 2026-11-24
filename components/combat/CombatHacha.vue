@@ -57,7 +57,10 @@ const props = defineProps({
   restante: { type: Number, required: true },
   total: { type: Number, required: true },
   pausado: Boolean,
-  sinLimite: Boolean
+  sinLimite: Boolean,
+  // Referencia temporal compartida con el reloj educativo (segundos efectivos sin pausas) y su estado de pausa.
+  tiempoActivo: { type: Function, default: null },
+  detenido: { type: Function, default: null }
 })
 const emit = defineEmits(['cortar'])
 
@@ -139,13 +142,18 @@ function pintarBolas() {
   }
 }
 
+// Pausa manual, ayuda abierta o pestaña oculta: no avanzan los proyectiles, no hay colisiones ni se aceptan cortes.
+const bloqueado = () => props.pausado || (props.detenido ? props.detenido() : document.hidden)
+const inicioReloj = props.tiempoActivo ? props.tiempoActivo() : 0
+
 function bucle(ahora) {
   cuadro = requestAnimationFrame(bucle)
   const dt = ultimoCuadro ? (ahora - ultimoCuadro) / 1000 : 0
   ultimoCuadro = ahora
-  if (!props.pausado && !document.hidden && cantidad.value < bolas.length) {
-    // Con la pestaña oculta no avanza; tras una pausa larga del navegador no salta más de medio segundo.
-    transcurrido += Math.min(dt, .5)
+  if (!bloqueado() && cantidad.value < bolas.length) {
+    // El tiempo sale del mismo reloj que el educativo (misma política de recuperación tras bloqueos del navegador).
+    if (props.tiempoActivo) transcurrido = Math.max(transcurrido, props.tiempoActivo() - inicioReloj)
+    else transcurrido += Math.min(dt, .5)
   }
   pintarBolas()
 }
@@ -182,7 +190,7 @@ function estallar(x, y) {
 }
 
 function tomar(evento) {
-  if (puntero !== null || evento.button !== 0 || cantidad.value === bolas.length) return
+  if (puntero !== null || evento.button !== 0 || cantidad.value === bolas.length || bloqueado()) return
   evento.currentTarget.setPointerCapture?.(evento.pointerId)
   puntero = evento.pointerId
   medir() // una sola lectura de geometría por gesto
@@ -242,7 +250,7 @@ function mueveHacha(destinoX, destinoY) {
 }
 
 function procesarMovimiento(evento) {
-  if (puntero !== evento.pointerId || cantidad.value === bolas.length || !medida.ancho) return
+  if (puntero !== evento.pointerId || cantidad.value === bolas.length || !medida.ancho || bloqueado()) return
   mueveHacha(evento.clientX - medida.izq - agarre.x, evento.clientY - medida.arriba - agarre.y)
 }
 
@@ -264,7 +272,7 @@ function cancelar(evento) {
 // Alternativa sin puntero: las flechas desplazan el hacha a saltos del 6 % del campo y cortan lo que cruzan.
 function teclado(evento) {
   const paso = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[evento.key]
-  if (!paso || cantidad.value === bolas.length) return
+  if (!paso || cantidad.value === bolas.length || bloqueado()) return
   evento.preventDefault()
   if (!medida.ancho) medir()
   anterior = { x: hacha.x * medida.ancho, y: hacha.y * medida.alto }

@@ -24,9 +24,9 @@
         </header>
         <p v-if="avisoPantalla" role="status">{{ t('El navegador no pudo cambiar la pantalla completa.') }}</p>
         <!-- El tablero se escala para caber completo en el espacio que queda (sin scroll) -->
-        <aside v-if="recomendacion && modoCalidad !== 'auto'" role="status">
+        <aside v-if="recomendacion" role="status">
           {{ t('El juego ha perdido fluidez. ¿Quieres usar una calidad gráfica inferior?') }}
-          <v-btn size="small" @click="aplicarRecomendacion">{{ t('Bajar calidad') }}</v-btn>
+          <v-btn size="small" @click="aplicarRecomendacion">{{ t('Cambiar a Lite') }}</v-btn>
           <v-btn size="small" @click="descartarRecomendacion">{{ t('Ahora no') }}</v-btn>
         </aside>
         <div class="zona-mapa">
@@ -56,7 +56,7 @@
       :activo="enTransicion"
       :nivel="nivelSeleccionado"
       @listo="iniciarCombate"
-      @cancelar="enTransicion = false"
+      @cancelar="cancelarTransicion"
     />
   </div>
 </template>
@@ -106,10 +106,8 @@ const enTransicion = ref(false)
 const nivelDesbloqueado = computed(() => progreso.estado.progreso.desbloqueado)
 const intento = ref(0)
 const showOptions = ref(false)
-// Mide la fluidez mientras se juega (mapa y batalla). La recomendación se aplica en momentos seguros.
+// Mide la fluidez mientras se juega (solo con Alta). Solo RECOMIENDA Lite: la elección del jugador se respeta.
 useFramePacing(computed(() => !enTransicion.value && quality.value !== 'lite'))
-// En modo Automático, una recomendación sostenida se aplica sola en el mapa (en batalla, entre rondas).
-watch(recomendacion, (valor) => { if (valor && modoCalidad.value === 'auto' && pantalla.value === 'mapa') aplicarRecomendacion() })
 
 onMounted(() => {
   loadPreferences()
@@ -127,6 +125,11 @@ function entrar(numero) {
   nivelSeleccionado.value = nivel
   // Cada batalla empieza con un pergamino breve; se puede omitir y volver a consultar desde el mapa.
   leccionPrevia.value = numero
+}
+// Cancelar la transición invalida las precargas del nivel que aún no se va a jugar.
+function cancelarTransicion() {
+  enTransicion.value = false
+  if (nivelSeleccionado.value) releaseScope(`nivel-${nivelSeleccionado.value.numero}`)
 }
 function comenzarTrasLeccion() {
   leccionPrevia.value = null

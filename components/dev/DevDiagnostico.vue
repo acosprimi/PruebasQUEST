@@ -5,8 +5,10 @@
       <dt>Fotograma</dt><dd>{{ medio }} ms (máx {{ maximo }})</dd>
       <dt>Lentos &gt;50 ms</dt><dd>{{ lentos }}</dd>
       <dt>Tareas largas</dt><dd>{{ largas === null ? 'no disponible' : largas + ' (' + largasMs + ' ms)' }}</dd>
-      <dt>Perfil</dt><dd>{{ quality }} ({{ qualityMode }})</dd>
+      <dt>Perfil</dt><dd>{{ quality }}</dd>
       <dt>Recursos en caché</dt><dd>{{ stats.entradas }} · {{ mb(stats.memoriaTeorica) }} MB teóricos</dd>
+      <dt>Presupuesto / visibles</dt><dd>{{ mb(stats.presupuesto) }} MB · {{ stats.visibles }} visibles · excesos {{ stats.excesos }} · omitidas {{ stats.omitidas }}</dd>
+      <dt>Descartadas/canceladas</dt><dd>{{ stats.descartadas }}/{{ stats.canceladas }}</dd>
       <dt>Descargas/fallos/liberadas</dt><dd>{{ stats.descargas }}/{{ stats.fallos }}/{{ stats.liberadas }}</dd>
       <dt>Precarga</dt><dd>{{ preparacion.loaded }}/{{ preparacion.total }} (fallos {{ preparacion.failed }}) {{ stats.pendientes ? '· en curso' : '' }}</dd>
       <dt>Memoria JS</dt><dd>{{ memoria }}</dd>

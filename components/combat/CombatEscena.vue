@@ -10,7 +10,7 @@
         <div class="luchador caballero" data-destino-palabra="heroe" :class="[caballero, { esperando, 'en-guardia': enGuardia, victoria, tenso: urgente, 'esquiva-lograda': ataque?.esquivado }]" role="img" :aria-label="t(sinArma ? 'Caballero sin arma' : 'Caballero con hacha y escudo solar')">
           <span v-if="furia" class="aura-furia" aria-hidden="true" />
           <span v-if="bloqueando" class="barrera-bloqueo" aria-hidden="true"><b>{{ t('¡Bloqueado!') }}</b></span>
-          <img v-for="pose in [...posesCaballero, ...posesNuevasCaballero]" v-show="!sinArma" :key="pose" class="pose"
+          <img v-for="pose in montadasCaballero" v-show="!sinArma" :key="pose" class="pose"
             :class="pose" :style="estiloPose('caballero', pose)"
             :src="poseUrl('/images/personajes-mate/caballero', pose)" alt="" draggable="false" />
           <img v-if="sinArma" class="pose sin-arma" :style="estiloPose('caballero', 'sin-arma')" :src="imageUrl('/images/personajes-mate/caballero/sin-arma.webp')" alt="" draggable="false" />
@@ -22,7 +22,7 @@
         <div class="luchador guardian" data-destino-palabra="monstruo" :class="[guardian, { esperando, 'con-derrota': nivel.derrota, c1: faseCarga === 1, c2: faseCarga === 2, 'desde-carga': cargaPrevia > 0 }]"
           :style="{ '--carga': carga ?? 0 }" role="img" :aria-label="nivel.guardian">
           <span v-if="enfurecido" class="aura-ira" aria-hidden="true" />
-          <img v-for="pose in [...posesGuardian, ...posesNuevasGuardian]" :key="pose" class="pose"
+          <img v-for="pose in montadasGuardian" :key="pose" class="pose"
             :class="pose" :style="estiloPose(carpetaGuardian, pose)"
             :src="poseUrl(nivel.arte, pose)" alt="" draggable="false" />
           <!-- Chorro (veneno / aliento): nace en la boca del sprite «ataque» y viaja con el jefe, sin depender del tamaño de la escena -->
@@ -84,10 +84,6 @@
       </span>
     </div>
     <slot name="actividad" />
-    <template v-if="nivel.remate === 'solar'">
-      <audio ref="audioTransformacion" src="/audio/combate/solar-transformacion.mp3" preload="auto" />
-      <audio ref="audioCarga" src="/audio/combate/solar-carga.mp3" preload="auto" />
-    </template>
     <span v-if="ataque?.lado && danoAplicado !== null" class="resultado-esquiva"
       :class="{ acierto: ataque.esquivado }" role="status">
       {{ ataque.esquivado ? t('¡Esquiva! · Contraataca') : '−' + danoAplicado + ' ' + t('PV') }}
@@ -101,7 +97,8 @@
 import medidasPoses from '~/data/medidas-poses.json'
 
 const { t } = useLanguage()
-const { imageUrl, levelBackground, prepareImages, levelEssentials, quality } = useGameGraphics()
+const { imageUrl, levelBackground, prepareImages, levelEssentials, levelPriorities, quality, assets } = useGameGraphics()
+import { PRIORIDAD } from '~/composables/useAssetManager.js'
 const props = defineProps({
   nivel: { type: Object, required: true },
   ataque: { type: Object, default: null },
@@ -138,32 +135,47 @@ const extension = (pose) => (nuevas.has(pose) ? 'webp' : 'png')
 // Las poses visibles al comenzar ya se prepararon durante la transición.
 const listas = reactive(new Set(levelEssentials(props.nivel)))
 const colaPoses = new AbortController()
+let tokenNivel = null
+const ambitoNivel = () => `nivel-${props.nivel.numero}`
+
+// Preparadas ≠ montadas ≠ visibles. Solo se montan en el DOM las poses de reposo/estado (siempre posibles) y las que
+// necesita el golpe en curso; el resto está preparado (decodificado) pero no ocupa nodos ni capas de composición.
+const baseCaballero = ['reposo', 'guardia', 'dolor', 'caida', 'final-3']
+const baseGuardian = computed(() => ['reposo', 'dolor', 'caida', 'carga-1', 'carga-2', ...(props.nivel.derrota ? ['derrota-2'] : [])])
+function necesaria(esHeroe, pose) {
+  const golpe = props.ataque
+  if (!golpe) return false
+  const recibe = esHeroe === (golpe.id === 'rival')
+  return recibe
+    ? posesReaccion.includes(pose) || ['golpeado', 'esquiva', 'derrota-1', 'derrota-2'].includes(pose)
+    : golpe.id === 'rival'
+      ? ['preparacion', 'impacto', 'ataque', 'recuperacion'].includes(pose) // el guardián ataca desde su carga
+      : pose.includes(golpe.id) || ['anticipacion', 'salida-magia'].includes(pose) ||
+        (golpe.final && /^(final-|impacto|preparacion|salida)/.test(pose))
+}
+const montadasCaballero = computed(() => [...posesCaballero, ...posesNuevasCaballero].filter((p) => baseCaballero.includes(p) || necesaria(true, p)))
+const montadasGuardian = computed(() => [...posesGuardian, ...posesNuevasGuardian.value].filter((p) => baseGuardian.value.includes(p) || necesaria(false, p)))
+
 function poseUrl(carpeta, pose) {
   const ruta = `${carpeta}/${pose}.${extension(pose)}`
   if (listas.has(ruta)) return imageUrl(ruta)
   const golpe = props.ataque
   if (!golpe) return undefined
   const esHeroe = carpeta.endsWith('/caballero')
-  const recibe = esHeroe === (golpe.id === 'rival')
-  const necesaria = recibe
-    ? posesReaccion.includes(pose) || ['golpeado', 'esquiva', 'derrota-1', 'derrota-2'].includes(pose)
-    : pose.includes(golpe.id) || ['anticipacion', 'ataque', 'salida-magia'].includes(pose) ||
-      (golpe.final && pose.startsWith('final-'))
-  return necesaria ? imageUrl(ruta) : undefined
+  return necesaria(esHeroe, pose) ? imageUrl(ruta) : undefined
 }
+// Preparación progresiva (próximas poses → secundarias) con prioridades; el gestor omite las que no caben en el presupuesto.
 onMounted(async () => {
-  const grupos = [
-    ['/images/personajes-mate/caballero', [...posesCaballero, ...posesNuevasCaballero]],
-    [props.nivel.arte, [...posesGuardian, ...posesNuevasGuardian.value]]
-  ]
-  for (const [carpeta, poses] of grupos) {
-    for (const pose of poses) {
-      if (colaPoses.signal.aborted) return
-      const ruta = `${carpeta}/${pose}.${extension(pose)}`
-      if (listas.has(ruta)) continue
-      await prepareImages([ruta], { signal: colaPoses.signal })
-      if (!colaPoses.signal.aborted) listas.add(ruta)
-    }
+  tokenNivel = assets.abrirAmbito(ambitoNivel())
+  const { proximas, secundarias } = levelPriorities(props.nivel, 'alta')
+  const lista = [...proximas.map((src) => ({ src, prioridad: PRIORIDAD.PROXIMA })), ...secundarias.map((src) => ({ src, prioridad: PRIORIDAD.SECUNDARIA }))]
+  for (const r of lista) {
+    if (colaPoses.signal.aborted) return
+    if (listas.has(r.src)) continue
+    // Nunca se decodifica mientras el estudiante resuelve una actividad con reloj en marcha
+    while (!colaPoses.signal.aborted && props.carga !== null && props.carga > 0) await new Promise((x) => setTimeout(x, 400))
+    const res = await prepareImages([r], { signal: colaPoses.signal, ambito: tokenNivel, concurrencia: 1 })
+    if (!colaPoses.signal.aborted && !res.cancelled) listas.add(r.src)
   }
 })
 onBeforeUnmount(() => colaPoses.abort())
@@ -212,8 +224,8 @@ const primerPlanoTodas = Array.from({ length: 7 }, (_, i) => ({
   '--d': (i * 1.9).toFixed(1),
   '--v': `${((i * 23) % 40) - 20}px`
 }))
-// Menos elementos reales en el DOM según el perfil: Alta conserva todo; Equilibrada, la mitad; Lite (mientras llega el cambio de escena), un tercio.
-const reducir = (lista) => computed(() => (quality.value === 'alta' ? lista : quality.value === 'equilibrada' ? lista.filter((_, i) => i % 2 === 0) : lista.filter((_, i) => i % 3 === 0)))
+// Menos elementos reales en el DOM según el perfil: Alta conserva todo; Lite (mientras llega el cambio de escena), un tercio.
+const reducir = (lista) => computed(() => (quality.value === 'alta' ? lista : lista.filter((_, i) => i % 3 === 0)))
 const chispasFinal = reducir(chispasFinalTodas)
 const particulasCarga = reducir(particulasCargaTodas)
 const motas = reducir(motasTodas)
@@ -226,38 +238,22 @@ const urgente = computed(() => esperando.value && props.carga >= 0.7)
 const victoria = computed(() => props.vidaRival === 0 && props.vidaCaballero > 0 && !props.ataque)
 const ataqueRival = computed(() => props.ataque?.id === 'rival')
 const remateSolar = computed(() => props.ataque?.final && props.ataque.remate === 'solar')
-const audioTransformacion = ref(null)
-const audioCarga = ref(null)
 
 const esperaSolar = ref(false)
 let cancelarClip
 let finClip
 let secuenciaSolar = 0
 
-function reproducirClip(audio) {
-  if (!audio) return
-  return new Promise((resolve) => {
-    const terminar = () => {
-      clearTimeout(limite)
-      audio.removeEventListener('ended', terminar)
-      audio.removeEventListener('error', terminar)
-      audio.pause()
-      cancelarClip = null
-      resolve()
-    }
-    // Si el dispositivo autoriza play pero nunca entrega audio, el duelo puede continuar.
-    const limite = setTimeout(terminar, 12000)
-    cancelarClip = terminar
-    audio.addEventListener('ended', terminar)
-    audio.addEventListener('error', terminar)
-    audio.currentTime = 0
-    audio.volume = 0.75 * volumenCanal('efectos')
-    audio.play().catch(terminar)
-  })
+// Los clips de la transformación solar pasan por el mezclador de audio (volumen del canal, sin instancias sueltas,
+// se detienen al salir de la batalla y no se descargan hasta que se necesitan).
+function reproducirClip(ruta) {
+  const clip = reproducirClipAudio(ruta)
+  cancelarClip = clip.detener
+  return clip.fin
 }
 
 function iniciarTransformacion() {
-  finClip = reproducirClip(audioTransformacion.value)
+  finClip = reproducirClip('/audio/combate/solar-transformacion.mp3')
 }
 
 async function esperarClipSolar() {
@@ -270,7 +266,7 @@ async function esperarClipSolar() {
 }
 
 async function encadenarCarga() {
-  if (await esperarClipSolar()) finClip = reproducirClip(audioCarga.value)
+  if (await esperarClipSolar()) finClip = reproducirClip('/audio/combate/solar-carga.mp3')
 }
 
 function cancelarSolar() {

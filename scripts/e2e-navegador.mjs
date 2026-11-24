@@ -1,7 +1,7 @@
 // Prueba real en navegador (Chromium sin interfaz con emulación móvil) sobre la compilación de producción (dist/).
 // No es parte de «npm test»: necesita playwright-core y un Chromium instalado aparte:
 //   npm i --no-save playwright-core && npx playwright-core install chromium && node scripts/e2e-navegador.mjs
-// Uso: node scripts/e2e-navegador.mjs [alta,equilibrada,lite]
+// Uso: node scripts/e2e-navegador.mjs [alta,lite]
 import { createServer } from 'node:http'
 import { readFileSync, existsSync, statSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
@@ -16,7 +16,7 @@ const servidor = createServer((req, res) => {
   if (!existsSync(f)) { res.writeHead(404); res.end('no'); return }
   res.writeHead(200, { 'content-type': tipos[extname(f)] ?? 'application/octet-stream' }); res.end(readFileSync(f))
 }).listen(4173)
-const perfiles = (process.argv[2] ?? 'alta,equilibrada,lite').split(',')
+const perfiles = (process.argv[2] ?? 'alta,lite').split(',')
 const resumen = {}
 const navegador = await chromium.launch()
 for (const perfil of perfiles) {

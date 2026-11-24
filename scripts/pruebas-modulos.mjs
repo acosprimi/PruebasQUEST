@@ -4,7 +4,8 @@ import { readFileSync, existsSync } from 'node:fs'
 import { nextTick } from 'vue'
 import { useCombatEngine, ATAQUES } from '../composables/useCombatEngine.js'
 import { crearProgreso, leerAlmacen, guardarAlmacen, validarDatos, migrarClavesAntiguas, datosIniciales, CLAVE, rangoDe, RANGOS, xpDe } from '../composables/usePlayerProgress.js'
-import { resolverImagen, variantesDisponibles, crearGestorImagenes, recursosEsenciales, fondoNivel, medidasDe, PRESUPUESTO } from '../composables/useAssetManager.js'
+import { resolverImagen, variantesDisponibles, crearGestorImagenes, recursosEsenciales, fondoNivel, medidasDe, PRESUPUESTO, PRIORIDAD, PERFILES } from '../composables/useAssetManager.js'
+import { crearRelojCombate } from '../composables/useCombatClock.js'
 import { resumirVentana, crearDetector, perfilInferior } from '../composables/useFramePacing.js'
 
 const niveles = JSON.parse(readFileSync(new URL('../data/niveles.json', import.meta.url), 'utf8'))
@@ -56,7 +57,7 @@ const n1 = niveles[0]
   const r0 = j.tiempoRestante.value
   oculto = false; intervalo(); now += 1000; intervalo()
   ok(j.tiempoRestante.value === r0, 'con el desafío en pausa el reloj no avanza')
-  j.reanudar(); now += 2000; intervalo()
+  j.reanudar(); for (let i = 0; i < 20; i++) { now += 100; intervalo() }
   ok(Math.abs(j.tiempoRestante.value - (r0 - 2)) < 0.01, 'tras reanudar el reloj cuenta tiempo real (2 s)')
   oculto = true; now += 5000; intervalo(); oculto = false
   ok(Math.abs(j.tiempoRestante.value - (r0 - 2)) < 0.01, 'con la pestaña oculta el tiempo no corre y la actividad no termina')
@@ -154,7 +155,7 @@ const memoriaAlmacen = (inicial = {}, { falla } = {}) => {
   const r = leerAlmacen(memoriaAlmacen({ [CLAVE]: '{esto no es json' }))
   ok(r.origen === 'recuperado' && r.datos.progreso.desbloqueado === 1, 'datos corruptos: se recupera con valores limpios')
   const raros = validarDatos({ app: 'english-quest', version: 2, ajustes: { calidad: 'ultra', volumen: { musica: 9, efectos: -2 }, textoEscala: 7 }, progreso: { desbloqueado: 99, niveles: { 9: {}, 1: { estrellas: 77, mejorPrecision: 3 } } } }).datos
-  ok(raros.ajustes.calidad === 'auto' && raros.ajustes.volumen.musica === 1 && raros.ajustes.volumen.efectos === 0 && raros.ajustes.textoEscala === 1 && raros.progreso.desbloqueado === 5 && !raros.progreso.niveles[9] && raros.progreso.niveles[1].estrellas === 3 && raros.progreso.niveles[1].mejorPrecision === 1, 'validación: valores fuera de rango o desconocidos se corrigen')
+  ok(raros.ajustes.calidad === 'lite' && raros.ajustes.volumen.musica === 1 && raros.ajustes.volumen.efectos === 0 && raros.ajustes.textoEscala === 1 && raros.progreso.desbloqueado === 5 && !raros.progreso.niveles[9] && raros.progreso.niveles[1].estrellas === 3 && raros.progreso.niveles[1].mejorPrecision === 1, 'validación: valores fuera de rango o desconocidos se corrigen')
   ok(leerAlmacen(memoriaAlmacen({ [CLAVE]: JSON.stringify({ app: 'english-quest', version: 99 }) })).origen === 'recuperado', 'una versión futura desconocida no se interpreta')
 }
 {
@@ -205,22 +206,22 @@ const partida = (extra = {}) => ({ nivel: 1, tema: 'Introducción al futuro', re
 // ── Imágenes por perfil
 {
   ok(resolverImagen('/images/personajes-mate/caballero/reposo.png', 'alta').endsWith('reposo.png'), 'Alta conserva el PNG original')
-  ok(resolverImagen('/images/personajes-mate/caballero/reposo.png', 'equilibrada').endsWith('reposo.webp'), 'Equilibrada usa el WebP completo')
   ok(resolverImagen('/images/personajes-mate/caballero/reposo.png', 'lite').endsWith('reposo-lite.webp'), 'Lite usa la variante reducida')
   ok(resolverImagen('/images/personajes-mate/caballero/guardia.webp', 'lite').endsWith('guardia-lite.webp'), 'un WebP original (sin PNG) también obtiene su variante Lite')
   ok(resolverImagen('/images/personajes-mate/caballero/guardia.webp', 'alta').endsWith('guardia.webp'), 'un WebP original conserva su calidad en Alta')
   ok(resolverImagen('/images/signs/stop.svg', 'lite') === '/images/signs/stop.svg' && resolverImagen('/images/no-existe.png', 'lite') === '/images/no-existe.png', 'SVG y rutas fuera del manifiesto no se transforman')
-  ok(variantesDisponibles('/images/personajes-mate/caballero/reposo.png').join() === 'alta,equilibrada,lite', 'se listan las variantes disponibles')
+  ok(variantesDisponibles('/images/personajes-mate/caballero/reposo.png').join() === 'alta,lite', 'se listan las variantes disponibles')
   const raiz = new URL('../public', import.meta.url).pathname
   let inexistentes = 0
-  for (const perfil of ['alta', 'equilibrada', 'lite']) for (const n of niveles) for (const r of recursosEsenciales(n, perfil)) {
+  for (const perfil of ['alta', 'lite']) for (const n of niveles) for (const r of recursosEsenciales(n, perfil)) {
     const u = resolverImagen(r, perfil)
     if (!existsSync(raiz + u)) { inexistentes++; console.log('   falta', perfil, u) }
   }
-  ok(inexistentes === 0, 'los recursos esenciales de los 4 niveles existen en los 3 perfiles (sin solicitudes 404)')
-  ok(fondoNivel(n1, 'lite').includes('/arenas/static/') && fondoNivel(n1, 'alta') === n1.fondo, 'Lite usa fondo estático; Alta y Equilibrada, el animado')
+  ok(inexistentes === 0, 'los recursos esenciales de los 4 niveles existen en los 2 perfiles (sin solicitudes 404)')
+  ok(fondoNivel(n1, 'lite').includes('/arenas/static/') && fondoNivel(n1, 'alta') === n1.fondo, 'Lite usa fondo estático; Alta, el animado')
   const peso = (perfil) => niveles.flatMap((n) => recursosEsenciales(n, perfil)).reduce((s, r) => s + (medidasDe(resolverImagen(r, perfil))?.bytes ?? 0), 0)
-  ok(peso('lite') < peso('equilibrada') && peso('equilibrada') < peso('alta'), `peso de esenciales: alta ${(peso('alta') / 1e6).toFixed(2)} MB > equilibrada ${(peso('equilibrada') / 1e6).toFixed(2)} MB > lite ${(peso('lite') / 1e6).toFixed(2)} MB`)
+  ok(peso('lite') < peso('alta'), `peso de esenciales: alta ${(peso('alta') / 1e6).toFixed(2)} MB > lite ${(peso('lite') / 1e6).toFixed(2)} MB`)
+  ok(!Object.values(manifiesto).some((e) => 'equilibrada' in e) && PERFILES.join() === 'alta,lite', 'el manifiesto y el gestor solo conocen Alta y Lite')
   // proporciones y transparencia entre variantes
   let mal = 0
   for (const e of Object.values(manifiesto)) { const [, w0, h0, , a0] = e.alta; for (const v of Object.values(e)) if (Math.abs(v[1] / v[2] - w0 / h0) / (w0 / h0) > 0.015 || v[4] !== a0) mal++ }
@@ -254,6 +255,61 @@ const partida = (extra = {}) => ({ nivel: 1, tema: 'Introducción al futuro', re
   ok(g3.instantanea().memoriaTeorica <= PRESUPUESTO.lite && g3.listo(lista[0]), 'el presupuesto de memoria de Lite se respeta y lo fijado al nivel actual se conserva')
 }
 
+// memoria por prioridades: pertenecer al nivel actual NO basta para quedarse; los obsoletos y de baja prioridad salen primero
+{
+  const crear = () => { const im = { decode: async () => {}, set src(v) { this._s = v; if (v) setTimeout(() => im.onload(), 1) }, get src() { return this._s } }; return im }
+  const g = crearGestorImagenes({ crearImagen: crear, perfil: () => 'lite', memoriaPorDefecto: 8 * 1048576 })
+  const x = (i) => `/images/x/${i}.png`
+  await g.preparar([x(0)], { ambito: 'nivel-1', prioridad: PRIORIDAD.ESENCIAL })
+  await g.preparar([x(1), x(2)], { ambito: 'nivel-1', prioridad: PRIORIDAD.SECUNDARIA })
+  await g.preparar([x(3)], { ambito: 'nivel-1', prioridad: PRIORIDAD.BAJA })
+  g.marcarVisible(g.resolver(x(0)))
+  ok(!g.listo(x(3)) && g.instantanea().omitidas === 1, 'un recurso de baja prioridad no desaloja a uno de mayor prioridad: se omite')
+  await g.preparar([x(4)], { ambito: 'nivel-1', prioridad: PRIORIDAD.ESENCIAL })
+  const antes = g.instantanea()
+  ok(antes.memoriaTeorica <= PRESUPUESTO.lite, 'todo del mismo nivel: aun así se respeta el presupuesto de Lite (se expulsa por prioridad)')
+  ok(g.listo(x(0)) && g.listo(x(4)) && antes.liberadas >= 1, 'se conservan lo visible/esencial y se expulsan primero los secundarios')
+  const g2 = crearGestorImagenes({ crearImagen: crear, perfil: () => 'lite', memoriaPorDefecto: 20 * 1048576 })
+  await g2.preparar([x(0), x(1)], { ambito: 'nivel-1', prioridad: PRIORIDAD.ESENCIAL })
+  ok(g2.listo(x(0)) && g2.listo(x(1)) && g2.instantanea().excesos >= 1, 'los esenciales nunca se expulsan: el exceso se registra en el diagnóstico')
+  const r = await g2.preparar([{ src: x(5), prioridad: PRIORIDAD.SECUNDARIA }], { ambito: 'nivel-1' })
+  ok(!g2.listo(x(5)) && g2.instantanea().omitidas === 1 && r.failed === 0, 'un recurso secundario que no cabe no se pide (evita ciclos de descarga y expulsión)')
+}
+// invalidación: un resultado que llega tras abandonar la batalla no se retiene
+{
+  const crear = () => { const im = { decode: async () => {}, set src(v) { this._s = v; if (v) setTimeout(() => im.onload && im.onload(), 20) }, get src() { return this._s } }; return im }
+  const g = crearGestorImagenes({ crearImagen: crear, perfil: () => 'lite' })
+  const u = '/images/personajes-mate/caballero/reposo.png'
+  const enCurso = g.preparar([u], { ambito: 'nivel-3' })
+  g.liberarAmbito('nivel-3')
+  const res = await enCurso
+  ok(res.cancelled && g.instantanea().entradas === 0 && !g.listo(u), 'una precarga que termina después de salir de la batalla no queda retenida por un ámbito inexistente')
+  const dec = g.decodificar(resolverImagen(u, 'lite'), 'nivel-1')
+  g.liberarTodoExcepto()
+  ok((await dec) === false && g.instantanea().entradas === 0, 'el cambio de perfil invalida las precargas en curso')
+  await g.preparar([u], { ambito: 'nivel-3' })
+  ok(g.listo(u), 'tras cerrar un ámbito, volver a abrirlo (reintento) funciona con una generación nueva')
+}
+// reloj compartido: proyectiles y reloj educativo usan la misma referencia temporal
+{
+  let t = 0, oculto = false, pausa = false
+  const r = crearRelojCombate({ ahora: () => t, programar: () => 1, cancelar: () => {}, detenido: () => oculto || pausa })
+  r.arrancar(20)
+  t = 300; const a = r.tiempoActivo()
+  t = 400; r.tick()
+  ok(Math.abs(a - 0.3) < 1e-9 && Math.abs(r.tiempoActivo() - 0.4) < 1e-9 && Math.abs(r.restante.value - 19.6) < 1e-9, 'tiempoActivo y reloj educativo avanzan lo mismo')
+  pausa = true; t = 900; const p1 = r.tiempoActivo(); t = 5000; r.tick()
+  ok(p1 === r.tiempoActivo() && Math.abs(r.restante.value - 19.6) < 1e-9, 'en pausa/ayuda/pestaña oculta no avanza ni el tiempo efectivo ni el reloj educativo')
+  pausa = false; r.reiniciarReferencia(); t = 15000; r.tick()
+  ok(Math.abs(r.tiempoActivo() - 0.9) < 1e-9 && Math.abs(r.restante.value - 19.1) < 1e-9, 'tras un bloqueo largo solo se cuentan 0,5 s por lectura, igual para el reloj y los proyectiles')
+}
+// migración de preferencias gráficas antiguas
+{
+  const viejo = (calidad) => validarDatos({ app: 'english-quest', version: 2, ajustes: { calidad, calidadAuto: 'equilibrada' }, progreso: { desbloqueado: 3 } }).datos
+  ok(viejo('equilibrada').ajustes.calidad === 'lite' && viejo('auto').ajustes.calidad === 'lite' && viejo('alta').ajustes.calidad === 'alta' && viejo('lite').ajustes.calidad === 'lite', 'Equilibrada y Automático migran a Lite; Alta y Lite se respetan')
+  ok(viejo('equilibrada').progreso.desbloqueado === 3 && !('calidadAuto' in viejo('auto').ajustes), 'la migración no reinicia el progreso y elimina el ajuste obsoleto')
+}
+
 // ── Fluidez y cambio de perfil
 {
   const buenas = Array.from({ length: 120 }, () => 16.7), malas = Array.from({ length: 40 }, () => 55)
@@ -265,7 +321,7 @@ const partida = (extra = {}) => ({ nivel: 1, tema: 'Introducción al futuro', re
   ok(!r[0].sostenido && !r[1].sostenido && r[2].sostenido, 'tres ventanas lentas seguidas = problema sostenido')
   const f = crearDetector()
   ok(!f.observar(resumirVentana(Array.from({ length: 3 }, () => 400))).lenta, 'una ventana casi sin fotogramas (pestaña limitada) se ignora')
-  ok(perfilInferior('alta') === 'equilibrada' && perfilInferior('equilibrada') === 'lite' && perfilInferior('lite') === null, 'la recomendación solo baja de perfil (alta → equilibrada → lite)')
+  ok(perfilInferior('alta') === 'lite' && perfilInferior('lite') === null && perfilInferior('equilibrada') === null, 'la recomendación solo propone Lite desde Alta')
 }
 // igualdad funcional entre perfiles: el motor no recibe el perfil gráfico
 {

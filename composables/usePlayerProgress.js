@@ -8,7 +8,8 @@ export const CLAVE = 'english-quest-v2'
 export const VERSION = 2
 const CLAVES_ANTIGUAS = { graficos: 'english-quest-graphics-v1', nivel: 'english-quest-unlocked-level' }
 export const NIVELES_TOTALES = 4
-export const PERFILES_VALIDOS = ['alta', 'equilibrada', 'lite']
+// Solo existen dos perfiles gráficos. Las preferencias antiguas «equilibrada» y «auto» se migran a Lite (alternativa segura).
+export const PERFILES_VALIDOS = ['alta', 'lite']
 const MAX_ERRORES = 60
 
 // Rangos de la narrativa medieval. El XP se deriva de los mejores resultados (no se acumula por repetir).
@@ -36,7 +37,7 @@ export function rangoDe(xp) {
 
 export function ajustesIniciales() {
   return {
-    calidad: 'auto', calidadAuto: 'equilibrada', introVista: false, idioma: 'es',
+    calidad: 'lite', introVista: false, idioma: 'es',
     textoEscala: 1, altoContraste: false, movimiento: 'sistema', sinDestellos: false, sinCamara: false,
     volumen: { musica: 0.8, efectos: 1, voces: 1 }, tiempoExtra: 1, practica: false
   }
@@ -64,8 +65,8 @@ export function validarDatos(bruto) {
   let reparado = false
   const aj = esObjeto(bruto.ajustes) ? bruto.ajustes : (reparado = true, {})
   const a = base.ajustes
-  a.calidad = ['auto', ...PERFILES_VALIDOS].includes(aj.calidad) ? aj.calidad : a.calidad
-  a.calidadAuto = PERFILES_VALIDOS.includes(aj.calidadAuto) ? aj.calidadAuto : a.calidadAuto
+  // Migración: «equilibrada», «auto» o un valor desconocido pasan a Lite; el progreso educativo no se toca.
+  a.calidad = PERFILES_VALIDOS.includes(aj.calidad) ? aj.calidad : 'lite'
   a.introVista = aj.introVista === true
   a.idioma = aj.idioma === 'en' ? 'en' : 'es'
   a.textoEscala = [1, 1.15, 1.3].includes(aj.textoEscala) ? aj.textoEscala : 1

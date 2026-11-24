@@ -34,23 +34,21 @@
 
 <script setup>
 const emit = defineEmits(['skip-intro'])
-const { introSeen, loadPreferences, setQualityMode, qualityMode, finishIntro, prepareImages, releaseScope, quality } = useGameGraphics()
-const progresoJugador = usePlayerProgress()
+const { introSeen, loadPreferences, setQualityMode, qualityMode, finishIntro, prepareImages, releaseScope } = useGameGraphics()
 const { language, t } = useLanguage()
 const open = ref(false)
 const cargando = ref(true)
 const progreso = ref({ loaded: 0, total: 3, failed: 0 })
-const seleccion = ref('auto')
+const seleccion = ref('lite')
 const intentos = ref(0)
 let controlador
+// Solo dos perfiles. Se explican en una frase cada uno.
 const perfiles = [
-  { id: 'auto', nombre: 'Automático', detalle: 'Empieza equilibrado y baja de calidad solo si detecta problemas de fluidez sostenidos.' },
-  { id: 'alta', nombre: 'Gráficos altos', detalle: 'Animaciones, filtros y efectos visuales completos.' },
-  { id: 'equilibrada', nombre: 'Gráficos equilibrados', detalle: 'Menos partículas y efectos secundarios; conserva las animaciones principales.' },
-  { id: 'lite', nombre: 'Modo Lite', detalle: 'Escena especializada: fondos estáticos, imágenes ligeras y efectos simplificados.' }
+  { id: 'alta', nombre: 'Gráficos altos', detalle: 'Experiencia visual completa: escenarios animados, auras, partículas, sombras, cámara y remates cinemáticos.' },
+  { id: 'lite', nombre: 'Gráficos Lite', detalle: 'Optimizada para celulares de bajos recursos: fondos estáticos, imágenes ligeras y efectos simplificados. Mismo juego, mismas preguntas.' }
 ]
-// El perfil sobre el que se prepara: el elegido, o el que usaría el modo automático.
-const perfilPreparado = computed(() => (seleccion.value === 'auto' ? progresoJugador.estado.ajustes.calidadAuto : seleccion.value))
+// El perfil sobre el que se prepara: el elegido. No se descargan los recursos exclusivos del otro perfil.
+const perfilPreparado = computed(() => seleccion.value)
 
 onMounted(() => {
   loadPreferences()
@@ -71,6 +69,7 @@ watch([open, perfilPreparado, language, intentos], async ([visible, perfil], _, 
     language.value === 'en' ? '/images/mapa-del-reino-en.svg' : '/images/mapa-del-reino.svg',
     perfil === 'lite' ? '/images/arenas/static/puerta-real.webp' : '/images/arenas/puerta-real-animado.svg'
   ]
+  releaseScope('menu') // invalida lo preparado para el otro perfil y cualquier solicitud en curso
   // El progreso es el real: cada imagen cuenta cuando termina de decodificarse (o falla).
   const resultado = await prepareImages(base, { signal: controller.signal, profile: perfil, ambito: 'menu', onProgress: (value) => { progreso.value = value } })
   if (controller.signal.aborted) return

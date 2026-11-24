@@ -67,11 +67,6 @@ img {
 }
 /* Perfiles gráficos de English Quest: los gestos y la secuencia central de
    combate siguen activos; estos selectores solo reducen decoración. */
-[data-graphics='equilibrada'] .particulas-brasas .brasa,
-[data-graphics='equilibrada'] .ambiente .mota,
-[data-graphics='equilibrada'] .polvo-frontal .mota-frontal,
-[data-graphics='equilibrada'] .particulas-carga .p { opacity: .45; }
-
 [data-graphics='lite'] .particulas-brasas,
 [data-graphics='lite'] .ambiente,
 [data-graphics='lite'] .bruma-frontal,
@@ -96,13 +91,32 @@ img {
 [data-graphics='lite'] .mapa,
 [data-graphics='lite'] .encuentro-pantalla { box-shadow: none; }
 
-[data-graphics='equilibrada'] .escena-heroe .brasa:nth-child(even),
 [data-graphics='lite'] .escena-heroe .brasa,
 [data-graphics='lite'] .efectos .chispa-vuelo,
 [data-graphics='lite'] .efectos .residuo { display: none; }
 
 [data-graphics='lite'] .secuencia:not(.activa):not(.urgente),
 [data-graphics='lite'] .escena-heroe .cuerpo { animation: none; }
+
+/* Lite en TODA la aplicación (menú, portal, mapa, transiciones, lecciones, resultados): sin desenfoques, sin brillos
+   infinitos ni partículas decorativas. El contenido, la narrativa y los controles no cambian. */
+[data-graphics='lite'] .niebla,
+[data-graphics='lite'] .brasa,
+[data-graphics='lite'] .espiral-brazos,
+[data-graphics='lite'] .octagrama { display: none !important; }
+[data-graphics='lite'] .home-title__nombre,
+[data-graphics='lite'] .home-title__nombre .rombo,
+[data-graphics='lite'] .escena-heroe .aura,
+[data-graphics='lite'] .escena-heroe .sombra,
+[data-graphics='lite'] .disponible .numero { animation: none !important; }
+[data-graphics='lite'] .home-title__nombre,
+[data-graphics='lite'] .heroe,
+[data-graphics='lite'] .caballero-salto,
+[data-graphics='lite'] .avatar-caballero,
+[data-graphics='lite'] .avatar-guardian { filter: none !important; }
+[data-graphics='lite'] .eq-modal { background: #070b12; }
+[data-graphics='lite'] .eq-caja { box-shadow: 0 0 0 3px #2a2118; }
+[data-graphics='lite'] .v-overlay__scrim { backdrop-filter: none !important; }
 
 /* ───────── Interfaces del reino (pergaminos, informes, estadísticas) ───────── */
 .eq-modal { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); background: #070b12ee; overscroll-behavior: contain; }

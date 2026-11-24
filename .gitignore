@@ -7,3 +7,4 @@ dist/
 node_modules/ 
 dist/
 MEMORIA_PROYECTO.md
+*.zip
