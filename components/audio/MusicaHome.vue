@@ -10,15 +10,37 @@ const props = defineProps({
   volumen: { type: Number, default: 0.5 }
 })
 const progreso = usePlayerProgress()
-const audio = ref(null)
+const audio = shallowRef(null)
 const audioEnPrimerPlano = useState('audio-en-primer-plano', () => false)
+const eventosDesbloqueo = ['pointerdown', 'pointerup', 'click', 'keydown']
+let intentoPendiente = false
 
-const iniciarMusica = () => {
-  if (audio.value && audio.value.paused && !audioEnPrimerPlano.value) audio.value.play().catch(() => {})
+function ponerDesbloqueo() {
+  for (const tipo of eventosDesbloqueo) document.addEventListener(tipo, desbloquear, true)
 }
-const desbloquear = () => { iniciarMusica(); quitarDesbloqueo() }
 function quitarDesbloqueo() {
-  for (const tipo of ['pointerdown', 'keydown']) document.removeEventListener(tipo, desbloquear)
+  for (const tipo of eventosDesbloqueo) document.removeEventListener(tipo, desbloquear, true)
+}
+function desbloquear() { iniciarMusica() }
+function iniciarMusica() {
+  const pista = audio.value
+  if (!pista || audioEnPrimerPlano.value || intentoPendiente) return
+  if (!pista.paused) { quitarDesbloqueo(); return }
+  intentoPendiente = true
+  pista.play().then(() => {
+    if (audio.value !== pista) return
+    quitarDesbloqueo()
+    if (audioEnPrimerPlano.value) pista.pause()
+  }).catch((error) => {
+    if (audio.value !== pista) return
+    // Un primer toque no siempre cuenta como activación en móvil. Reintentar hasta que funcione.
+    if (error?.name === 'NotAllowedError') ponerDesbloqueo()
+    else if (error?.name !== 'AbortError') console.warn('[English Quest] No se pudo reproducir la música:', pista.src, error)
+  }).finally(() => {
+    intentoPendiente = false
+    // Si se interrumpió una solicitud por una voz, el siguiente gesto podrá reanudarla.
+    if (audio.value === pista && pista.paused && !audioEnPrimerPlano.value && !pista.error) ponerDesbloqueo()
+  })
 }
 
 watch(audioEnPrimerPlano, (reproducirVoz) => {
@@ -31,22 +53,24 @@ watch(() => progreso.estado.ajustes.volumen.musica, aplicarVolumenMusica)
 onMounted(() => {
   audio.value = new Audio(rutaAudio(props.ruta))
   audio.value.loop = true
+  audio.value.onerror = () => console.warn('[English Quest] No se pudo cargar la música:', audio.value?.src)
   registrarMusica(audio.value, props.volumen)
-  if (!audioEnPrimerPlano.value) {
-    audio.value.play().catch(() => {
-      for (const tipo of ['pointerdown', 'keydown']) document.addEventListener(tipo, desbloquear, { once: true })
-    })
-  }
+  // Se arma antes del primer intento; se retira solamente al iniciar correctamente o desmontar.
+  ponerDesbloqueo()
+  iniciarMusica()
 })
 
 onUnmounted(() => {
   quitarDesbloqueo()
   if (audio.value) {
-    audio.value.pause()
-    audio.value.currentTime = 0
-    liberarMusica(audio.value)
-    audio.value.src = ''
+    const pista = audio.value
     audio.value = null
+    pista.onerror = null
+    pista.pause()
+    pista.currentTime = 0
+    liberarMusica(pista)
+    pista.removeAttribute('src')
+    pista.load()
   }
 })
 </script>

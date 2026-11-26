@@ -17,11 +17,14 @@ const propios = new Set()
 watch(() => props.disparo, () => {
   if (!props.ruta) return
   const e = reproducirEfecto(props.ruta, { volumen: props.volumen, canal: props.canal })
-  if (e) propios.add(e)
+  if (e) {
+    propios.add(e)
+    e.fin.then(() => propios.delete(e))
+  }
 })
 
 onBeforeUnmount(() => {
-  propios.forEach((e) => e.audio.pause())
+  propios.forEach((e) => e.detener())
   propios.clear()
 })
 </script>

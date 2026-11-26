@@ -82,3 +82,7 @@ npm run dev
 ## Integracion posterior de la entrega
 
 Se restauraron los 27 MP3 originales desde IA 1, sin modificarlos. Los tres WOFF2 mencionados en el informe anterior no estaban incluidos en la exportacion; se sustituyeron sus URLs inexistentes por referencias a fuentes instaladas localmente y se conservaron las alternativas serif existentes. No se incorporaron dependencias de red. Se excluyeron los directorios generados del ZIP.
+
+## Corrección de audio posterior a la integración
+
+Se sustituyó el uso de `import.meta.env.BASE_URL` (base de compilación de Vite, que en Nuxt puede apuntar a `/_nuxt/`) por `useRuntimeConfig().app.baseURL` mediante `plugins/audio.client.js`. Los recursos públicos se resuelven desde la ruta base del sitio. Se corrigió el reintento de reproducción de música tras bloqueos de autoplay y la detención idempotente de efectos, evitando que un componente antiguo detenga un sonido reutilizado. Los 27 MP3 conservan sus hashes SHA-256 originales. Se verificaron los archivos con FFprobe, la decodificación con FFmpeg y las rutas y el ciclo de vida con un Audio simulado en Node. No se verificó la reproducción en la aplicación Nuxt: la navegación local del navegador de pruebas fue bloqueada por el entorno. La compilación completa y las pruebas en el dispositivo del usuario quedan pendientes.
