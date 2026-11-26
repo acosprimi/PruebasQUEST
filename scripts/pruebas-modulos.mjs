@@ -1,5 +1,6 @@
 // Pruebas de los módulos reales del juego (sin copias): motor de combate, progreso y almacenamiento, gestor de
 // imágenes, perfiles gráficos y detección de fluidez. Uso: node scripts/pruebas-modulos.mjs
+import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import { nextTick } from 'vue'
 import { useCombatEngine, ATAQUES } from '../composables/useCombatEngine.js'
@@ -212,13 +213,13 @@ const partida = (extra = {}) => ({ nivel: 1, tema: 'Introducción al futuro', re
   ok(resolverImagen('/images/personajes-mate/caballero/guardia.webp', 'alta').endsWith('guardia.webp'), 'un WebP original conserva su calidad en Alta')
   ok(resolverImagen('/images/signs/stop.svg', 'lite') === '/images/signs/stop.svg' && resolverImagen('/images/no-existe.png', 'lite') === '/images/no-existe.png', 'SVG y rutas fuera del manifiesto no se transforman')
   ok(variantesDisponibles('/images/personajes-mate/caballero/reposo.png').join() === 'alta,lite', 'se listan las variantes disponibles')
-  const raiz = new URL('../public', import.meta.url).pathname
+  const raiz = fileURLToPath(new URL('../public', import.meta.url))
   let inexistentes = 0
   for (const perfil of ['alta', 'lite']) for (const n of niveles) for (const r of recursosEsenciales(n, perfil)) {
     const u = resolverImagen(r, perfil)
     if (!existsSync(raiz + u)) { inexistentes++; console.log('   falta', perfil, u) }
   }
-  ok(inexistentes === 0, 'los recursos esenciales de los 4 niveles existen en los 2 perfiles (sin solicitudes 404)')
+  ok(inexistentes === 0, 'los recursos esenciales de todos los niveles existen en los 2 perfiles (sin solicitudes 404)')
   ok(fondoNivel(n1, 'lite').includes('/arenas/static/') && fondoNivel(n1, 'alta') === n1.fondo, 'Lite usa fondo estático; Alta, el animado')
   const peso = (perfil) => niveles.flatMap((n) => recursosEsenciales(n, perfil)).reduce((s, r) => s + (medidasDe(resolverImagen(r, perfil))?.bytes ?? 0), 0)
   ok(peso('lite') < peso('alta'), `peso de esenciales: alta ${(peso('alta') / 1e6).toFixed(2)} MB > lite ${(peso('lite') / 1e6).toFixed(2)} MB`)

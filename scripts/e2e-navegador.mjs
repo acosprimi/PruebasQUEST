@@ -5,10 +5,12 @@
 import { createServer } from 'node:http'
 import { readFileSync, existsSync, statSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright-core'
 
-const dist = new URL('../dist', import.meta.url).pathname
-const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.mp3': 'audio/mpeg' }
+const dist = fileURLToPath(new URL('../dist', import.meta.url))
+const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.mp3': 'audio/mpeg' }
 const servidor = createServer((req, res) => {
   let ruta = decodeURIComponent(req.url.split('?')[0])
   let f = join(dist, ruta)
@@ -33,11 +35,11 @@ for (const perfil of perfiles) {
   await pagina.waitForSelector('button.zona', { timeout: 15000 })
   const r = { perfil }
   r.atributo = await pagina.getAttribute('[data-graphics]', 'data-graphics')
-  await pagina.screenshot({ path: `/tmp/e2e-${perfil}-mapa.png` })
+  await pagina.screenshot({ path: join(tmpdir(), `e2e-${perfil}-mapa.png`) })
   await pagina.locator('button.zona').first().click()
   await pagina.waitForSelector('.pergamino', { timeout: 5000 })
   r.leccion = (await pagina.locator('.pergamino h2').first().innerText())
-  await pagina.screenshot({ path: `/tmp/e2e-${perfil}-leccion.png` })
+  await pagina.screenshot({ path: join(tmpdir(), `e2e-${perfil}-leccion.png`) })
   await pagina.getByRole('button', { name: /Omitir lección/ }).click()
   await pagina.waitForSelector('.desafio', { timeout: 30000 })
   await pagina.waitForSelector('.escenario', { timeout: 15000 })
@@ -46,7 +48,7 @@ for (const perfil of perfiles) {
   r.escenaCompleta = scripts.some((s) => /CombatEscena\./.test(s)) || (await pagina.evaluate(() => performance.getEntriesByType('resource').map((x) => x.name).some((n) => /CombatEscena\.[\w-]+\.js/.test(n))))
   r.escenaLiteCargada = await pagina.evaluate(() => performance.getEntriesByType('resource').map((x) => x.name).some((n) => /CombatEscenaLite/.test(n)))
   r.escenaPesadaCargada = await pagina.evaluate(() => performance.getEntriesByType('resource').map((x) => x.name).some((n) => /CombatEscena\.[\w-]+\.(js|css)/.test(n)))
-  await pagina.screenshot({ path: `/tmp/e2e-${perfil}-combate.png` })
+  await pagina.screenshot({ path: join(tmpdir(), `e2e-${perfil}-combate.png`) })
   // Pausa segura y reanudación
   await pagina.getByRole('button', { name: /Pausar/ }).click()
   r.pausa = await pagina.locator('.pausa').count()
@@ -55,7 +57,7 @@ for (const perfil of perfiles) {
   const t0 = Date.now()
   await pagina.waitForSelector('.panel h2:has-text("El guardián te alcanzó"), .panel h2:has-text("Se acabó el tiempo")', { timeout: 60000 })
   r.segundosHastaGolpe = Math.round((Date.now() - t0) / 1000)
-  await pagina.screenshot({ path: `/tmp/e2e-${perfil}-revision.png` })
+  await pagina.screenshot({ path: join(tmpdir(), `e2e-${perfil}-revision.png`) })
   r.vida = await pagina.locator('.marcador .identidad span').first().innerText()
   r.retro = (await pagina.locator('.panel .retro').count())
   await pagina.getByRole('button', { name: /Siguiente pregunta/ }).click()
@@ -72,5 +74,5 @@ for (const perfil of perfiles) {
   await ctx.close()
 }
 await navegador.close(); servidor.close()
-writeFileSync('/tmp/e2e-resumen.json', JSON.stringify(resumen, null, 1))
+writeFileSync(join(tmpdir(), 'e2e-resumen.json'), JSON.stringify(resumen, null, 1))
 console.log(JSON.stringify(resumen, null, 1))

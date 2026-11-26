@@ -21,7 +21,11 @@
     </header>
 
     <div class="banda-ronda">
-      <p class="etiqueta">{{ t('DESAFÍO') }} {{ indice + 1 }} / {{ nivel.preguntas.length }}</p>
+      <div class="ronda-id">
+        <span class="sr-solo">{{ t('DESAFÍO') }} {{ indice + 1 }} / {{ nivel.preguntas.length }}</span>
+        <span class="pips" aria-hidden="true"><i v-for="(_, n) in nivel.preguntas" :key="n" :class="{ hecho: n < indice, actual: n === indice }" /></span>
+        <span v-if="insignia" :key="indice" class="insignia" aria-hidden="true"><b>{{ insignia[0] }}</b><em>{{ t(insignia[1]) }}</em></span>
+      </div>
       <details v-if="fase === 'pregunta'" :key="indice" class="ayuda-desafio" @toggle="ayudaAbierta = $event.currentTarget.open">
         <summary>{{ t('Cómo jugar') }}</summary>
         <p>{{ instruccion }}</p>
@@ -158,9 +162,16 @@
               <strong :class="retro.acierto ? 'rv-ok' : 'rv-mal'">{{ retro.acierto ? '✔ ' + t('Respuesta correcta') : '✖ ' + t('Respuesta incorrecta') }}</strong>
               <span v-if="textoConsecuencia" class="rv-cons">{{ textoConsecuencia }}</span>
             </p>
-            <p class="rv-expl"><b lang="en">{{ pregunta.correcta }}</b> — {{ pregunta.explicacion }}</p>
+            <div class="rv-carta" :class="retro.acierto ? 'ok' : 'mal'">
+              <span class="rv-icono" aria-hidden="true">{{ retro.acierto ? '⚔️' : '🛡️' }}</span>
+              <div>
+                <b lang="en">{{ pregunta.correcta }}</b>
+                <small>{{ explicacionCorta.corta }}</small>
+              </div>
+            </div>
             <details class="rv-mas">
               <summary>{{ t('Más ayuda') }}</summary>
+              <p v-if="explicacionCorta.resto" class="retro">{{ explicacionCorta.resto }}</p>
               <p v-if="!retro.acierto && retro.respuesta && !esMotriz">{{ t('Tu respuesta') }} <span lang="en">{{ retro.respuesta }}</span></p>
               <p v-if="retro.regla" class="retro"><b>{{ t('Regla para repasar') }}</b> {{ t(retro.regla) }}</p>
               <p v-if="retro.consejo" class="retro"><b>{{ t('Cómo resolver algo parecido') }}</b> {{ t(retro.consejo) }}</p>
@@ -326,12 +337,29 @@ const instruccion = computed(() => {
   if (pregunta.value.tipo === 'proteger-aliado') return t('Une las palabras de la promesa en un trazo. Si te equivocas, suelta y vuelve a empezar.')
   if (pregunta.value.tipo === 'esquivar') return t('Lee el aviso y arrastra al héroe hacia un lado del puente.')
   if (pregunta.value.tipo === 'esquiva-frase') return t('Arrastra la ficha al espacio del aviso para activar la esquiva.')
-  if (pregunta.value.tipo === 'errores') return t('Toca la palabra incorrecta de la frase.')
+  if (pregunta.value.tipo === 'errores') return t('Toca la palabra incorrecta.')
   if (pregunta.value.tipo === 'parejas') return t('Toca una carta de cada columna para unir las parejas. Tienes dos errores.')
-  if (pregunta.value.tipo === 'escuchar') return t('Escucha la frase y toca la opción que oíste.')
+  if (pregunta.value.tipo === 'escuchar') return t('Escucha y toca la frase que oíste.')
   if (pregunta.value.tipo === 'clasificar') return t('Suelta las palabras sobre los personajes antes de que ataque el guardián.')
   return t('Si aciertas, eliges un ataque. Si fallas o se acaba el tiempo, el guardián te ataca.')
 })
+// Insignia de la actividad: icono + verbo corto, para entender de un vistazo qué hay que hacer sin leer.
+const INSIGNIAS = {
+  ordenar: ['🧩', 'Forja la frase'], errores: ['🔍', 'Caza el error'], parejas: ['🔗', 'Une las runas'], cortar: ['⚔️', 'Corta lo falso'],
+  escuchar: ['👂', 'Escucha'], clasificar: ['🎯', 'Lanza al blanco'], hacha: ['🪓', 'Corta los orbes'], esquivar: ['💨', 'Esquiva'],
+  'esquiva-frase': ['🛡️', 'Completa y esquiva'], 'romper-hechizo': ['✨', 'Rompe el hechizo'], 'proteger-aliado': ['🤝', 'Cumple la promesa'], zona: ['🚦', 'Elige tu posición']
+}
+const insignia = computed(() => INSIGNIAS[pregunta.value?.tipo] ?? null)
+
+// Retroalimentación breve: solo la primera frase de la explicación; el resto queda plegado en «Más ayuda».
+const explicacionCorta = computed(() => {
+  const texto = String(pregunta.value?.explicacion ?? '').trim()
+  const corte = texto.search(/[.!?»”]["”»]?\s+(?=\S)/)
+  if (corte === -1 || texto.length < 90) return { corta: texto, resto: '' }
+  const fin = texto.indexOf(' ', corte + 1)
+  return { corta: texto.slice(0, fin).trim(), resto: texto.slice(fin).trim() }
+})
+
 const consignaCampo = computed(() => {
   if (fase.value !== 'pregunta') return ''
   if (pregunta.value.tipo === 'proteger-aliado') return pregunta.value.contexto
@@ -869,4 +897,26 @@ summary { cursor: pointer; color: #ffe09a; }
   .banda-ronda { gap: 6px; }
   .banda-ronda .reloj { min-width: 65px; }
 }
+
+/* ── Presentación de la ronda: insignia de actividad y camino de desafíos ── */
+.sr-solo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ronda-id { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pips { display: inline-flex; gap: 4px; }
+.pips i { width: 9px; height: 9px; transform: rotate(45deg); border: 1px solid #b68a48; background: #0b1325; }
+.pips i.hecho { background: #e6b96e; }
+.pips i.actual { background: #ffe09a; box-shadow: 0 0 8px #ffe09a; animation: latir-pip 1.2s ease-in-out infinite; }
+@keyframes latir-pip { 50% { scale: 1.35; } }
+.insignia { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 4px; border: 1px solid #b68a48; border-radius: 999px; background: linear-gradient(90deg, #3a2a14, #1a2338); animation: entra-insignia 380ms cubic-bezier(.2, 1.4, .4, 1) both; }
+.insignia b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #0b1325; font-size: 14px; }
+.insignia em { color: #ffe09a; font: 800 0.7rem system-ui, sans-serif; font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+@keyframes entra-insignia { from { opacity: 0; translate: -14px 0; } }
+@media (max-height: 520px), (max-width: 560px) { .insignia em { display: none; } .insignia { padding-right: 4px; } }
+.rv-carta { display: flex; align-items: center; gap: 10px; margin: 6px 0; padding: 8px 10px; border: 1px solid #b68a48; border-radius: 10px; background: linear-gradient(135deg, #2b2113, #141c2c); animation: entra-carta 420ms cubic-bezier(.2, 1.3, .4, 1) both; }
+.rv-carta.ok { border-color: #6fcf97; box-shadow: 0 0 14px #6fcf9740; }
+.rv-carta.mal { border-color: #e0786b; }
+.rv-icono { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #0b1325; font-size: 20px; }
+.rv-carta b { display: block; color: #fff0cc; font: 700 1rem Georgia, serif; }
+.rv-carta small { display: block; margin-top: 2px; color: #d8cdb8; font-size: 0.82rem; line-height: 1.3; }
+@keyframes entra-carta { from { opacity: 0; translate: 0 10px; scale: .96; } }
+@media (prefers-reduced-motion: reduce) { .pips i.actual, .insignia, .rv-carta { animation: none; } }
 </style>

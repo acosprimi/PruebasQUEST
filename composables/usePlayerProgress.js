@@ -324,7 +324,7 @@ let instancia = null
 export function usePlayerProgress() {
   if (!instancia) {
     let almacenamiento = null
-    try { almacenamiento = typeof localStorage !== 'undefined' ? localStorage : null } catch { almacenamiento = null }
+    try { almacenamiento = typeof window !== 'undefined' ? window.localStorage : null } catch { almacenamiento = null }
     let t = 0
     instancia = crearProgreso(almacenamiento, { diferirGuardado: (fn) => { clearTimeout(t); t = setTimeout(fn, 300); return t } })
     if (typeof document !== 'undefined') {

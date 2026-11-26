@@ -8,7 +8,7 @@
 
       <div v-if="hayVoz" class="voz">
         <AudioSonidoBoton @click="hablar(false)">
-          <v-btn type="button" variant="tonal" color="amber-lighten-3">🔊 {{ t('Escuchar otra vez') }}</v-btn>
+          <v-btn type="button" class="cuerno" :class="{ sonando }" variant="tonal" color="amber-lighten-3">🔊 <span class="ondas" aria-hidden="true"><i /><i /><i /></span> {{ t('Escuchar otra vez') }}</v-btn>
         </AudioSonidoBoton>
         <AudioSonidoBoton @click="hablar(true)">
           <v-btn type="button" variant="outlined" color="amber-lighten-3">🐢 {{ t('Despacio') }}</v-btn>
@@ -21,7 +21,7 @@
 
     <div class="opciones" role="group" :aria-label="t('Opciones')" lang="en">
       <AudioSonidoBoton v-for="opcion in pregunta.opciones" :key="opcion" @click="elegir(opcion)">
-        <v-btn block type="button" variant="outlined" color="amber-lighten-3" :disabled="elegida !== ''">{{ opcion }}</v-btn>
+        <v-btn block type="button" class="pergamino" variant="outlined" color="amber-lighten-3" :disabled="elegida !== ''"><span class="letra" aria-hidden="true">{{ 'ABC'[pregunta.opciones.indexOf(opcion)] }}</span>{{ opcion }}</v-btn>
       </AudioSonidoBoton>
     </div>
   </div>
@@ -36,6 +36,7 @@ const props = defineProps({ pregunta: { type: Object, required: true } })
 const emit = defineEmits(['responder'])
 const hayVoz = ref(true)
 const elegida = ref('')
+const sonando = ref(false)
 const audioEnPrimerPlano = useState('audio-en-primer-plano', () => false)
 let vozActiva = null
 
@@ -49,7 +50,9 @@ function hablar(lento = false) {
   voz.rate = lento ? 0.55 : 0.85
   const ingles = window.speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith('en'))
   if (ingles) voz.voice = ingles
+  voz.onstart = () => { if (vozActiva === voz) sonando.value = true }
   const liberarAudio = () => {
+    sonando.value = false
     if (vozActiva !== voz) return
     vozActiva = null
     audioEnPrimerPlano.value = false
@@ -117,4 +120,18 @@ p { margin: 0; line-height: 1.2; }
 @media (orientation: portrait) and (max-width: 600px) {
   .opciones { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Cuerno de alerta: el jugador ESCUCHA el aviso (ondas animadas) y elige entre pergaminos con letra */
+.cuerno.v-btn { border-radius: 999px; font-weight: 800; }
+.ondas { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; margin-inline: 4px; }
+.ondas i { width: 3px; height: 5px; border-radius: 2px; background: #ffe09a; }
+.cuerno.sonando .ondas i { animation: onda 700ms ease-in-out infinite alternate; }
+.cuerno.sonando .ondas i:nth-child(2) { animation-delay: 120ms; }
+.cuerno.sonando .ondas i:nth-child(3) { animation-delay: 240ms; }
+.cuerno.sonando { box-shadow: 0 0 14px #ffe09a88; }
+@keyframes onda { to { height: 14px; } }
+.pergamino.v-btn { border-color: #b68a48 !important; background: linear-gradient(#2a2418, #171d2b) !important; }
+.pergamino :deep(.v-btn__content) { display: flex !important; align-items: center; gap: 8px; text-align: left; }
+.letra { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #e6b96e; color: #1a1408; font: 800 0.75rem Georgia, serif; }
+@media (prefers-reduced-motion: reduce) { .cuerno.sonando .ondas i { animation: none; height: 10px; } }
 </style>

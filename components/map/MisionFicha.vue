@@ -14,8 +14,10 @@
         <h2 id="ficha-titulo">{{ nivel.nombre }}</h2>
         <p class="guard">{{ t('Guardián') }}: <strong>{{ nivel.guardian }}</strong> · <span>{{ nivel.tema }}</span></p>
         <p class="desc">{{ t(info.descripcion) }}</p>
-        <h3>{{ t('Conocimientos necesarios') }}</h3>
-        <ul><li v-for="(c, i) in info.conocimientos" :key="i">{{ t(c) }}</li></ul>
+        <details class="conoc">
+          <summary>⚔ {{ t('Conocimientos necesarios') }} <span aria-hidden="true">({{ info.conocimientos.length }})</span></summary>
+          <ul><li v-for="(c, i) in info.conocimientos" :key="i">{{ t(c) }}</li></ul>
+        </details>
         <p v-if="!esFinal" class="sugerencia">{{ t('Recomendación: si tienes dudas, repasa el contenido antes del combate. Es opcional.') }}</p>
         <p v-if="bloqueada" class="bloqueo" role="status">{{ esFinal ? t('Para desbloquearla completa las cuatro batallas del reino.') : t('Esta misión se desbloquea al completar la zona anterior.') }}</p>
       </v-card-text>
@@ -55,4 +57,9 @@ ul { margin: 0; padding-left: 1.2rem; display: grid; gap: .25rem; }
 .sugerencia { margin: .7rem 0 0; color: #cde5ee; font-size: .9rem; }
 .bloqueo { margin: .7rem 0 0; padding: .5rem .7rem; border: 1px solid #b3955c; border-radius: 6px; background: #1b2635; color: #ffe09a; }
 .acciones { flex-wrap: wrap; gap: .4rem; padding: .6rem 1rem 1rem; }
+
+.conoc { margin: .5rem 0; border: 1px solid #b3955c66; border-radius: 10px; background: #1a120d; }
+.conoc summary { min-height: 44px; display: flex; align-items: center; padding: 0 12px; color: #ffe09a; font-weight: 700; cursor: pointer; }
+.conoc ul { margin: 0; padding: 0 14px 10px 30px; }
+.conoc[open] { box-shadow: 0 0 12px #ffd98a22; }
 </style>

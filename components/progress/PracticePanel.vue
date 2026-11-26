@@ -71,6 +71,7 @@
 </template>
 
 <script setup>
+import { mezclarPregunta, ordenFichas, barajar } from '~/composables/useBarajar.js'
 import nivelesBase from '~/data/niveles.json'
 import lecciones from '~/data/lecciones.json'
 const emit = defineEmits(['cerrar'])
@@ -92,7 +93,7 @@ const tarea = computed(() => {
   const familia = base ? [base, ...(base.variantes ?? [])] : []
   const otras = familia.filter((q) => q.texto !== item.texto)
   const pregunta = (otras.length ? otras[Math.floor(Math.random() * otras.length)] : familia.find((q) => q.texto === item.texto)) ?? null
-  return pregunta ? { clave, item, pregunta } : null
+  return pregunta ? { clave, item, pregunta: mezclarPregunta(pregunta) } : null
 })
 // Congela la pregunta elegida mientras se resuelve (computed se reevalúa al cambiar el refuerzo).
 const fija = ref(null)
@@ -112,10 +113,11 @@ const opciones = computed(() => {
 })
 const fichas = computed(() => {
   const q = actual.value.pregunta
-  return q.fichas ?? q.nodos ?? q.correcta.replace(/[.!?]$/, '').split(' ').sort(() => Math.random() - 0.5)
+  if (q.tipo === 'ordenar') return ordenFichas(q.fichas, q.correcta).map(i => q.fichas[i])
+  return q.fichas ?? (q.nodos ? barajar(q.nodos) : undefined) ?? q.correcta.replace(/[.!?]$/, '').split(' ').sort(() => Math.random() - 0.5)
 })
 const izquierda = computed(() => actual.value.pregunta.parejas?.map((p) => p.izq) ?? [])
-const derecha = computed(() => [...(actual.value.pregunta.parejas?.map((p) => p.der) ?? [])].sort())
+const derecha = computed(() => barajar(actual.value.pregunta.parejas?.map((p) => p.der) ?? []))
 const norm = (x) => x.trim().toLowerCase().replace(/[.?!]+$/, '').replace(/\s+/g, ' ')
 
 function cerrar(acierto) {

@@ -5,16 +5,16 @@
     "descripcion": "Objeto Virtual de Aprendizaje en forma de videojuego medieval para practicar inglés básico: futuro con going to y will, y señales y normas de tránsito."
   },
   "institucion": {
-    "universidad": null,
-    "programa": null,
-    "asignatura": null,
+    "universidad": "Universidad de Córdoba",
+    "programa": "Licenciatura en Informática",
+    "asignatura": "Fundamentos de Programación",
     "docente": null
   },
   "integrantes": [
-    { "nombre": null, "foto": null, "rol": null },
-    { "nombre": null, "foto": null, "rol": null },
-    { "nombre": null, "foto": null, "rol": null },
-    { "nombre": null, "foto": null, "rol": null }
+    { "nombre": "Acosprimi Polo Romero", "foto": "/images/creditos/miniaturas/Acosprimi Polo Romero.jpg", "rol": null },
+    { "nombre": "Valeria Altafulla Urango", "foto": "/images/creditos/miniaturas/Valeria Altafulla Urango.jpeg", "rol": null },
+    { "nombre": "Cristian Acevedo Pineda", "foto": "/images/creditos/miniaturas/Cristian Acevedo Pineda.jpeg", "rol": null },
+    { "nombre": "Lausabid Polo Romero", "foto": "/images/creditos/miniaturas/Lausabid Polo Romero.jpeg", "rol": null }
   ],
   "atribuciones": [
     { "recurso": "Videos de YouTube incrustados en la Biblioteca del reino", "autor": "BBC Learning English, CodeLucky, English WOWcabulary, Easy English Learning Hub y Boost your Vocabulary", "nota": "Se reproducen con el reproductor oficial de YouTube; los derechos pertenecen a sus autores." },

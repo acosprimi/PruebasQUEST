@@ -11,15 +11,20 @@
 // Solo existen estos dos perfiles. Los .webp de tamaño completo que acompañaban a un .png eran exclusivos del antiguo
 // perfil Equilibrada: --eliminar-obsoletos los borra si no hay ninguna referencia literal a ellos.
 // El manifiesto data/variantes-imagenes.json lista únicamente variantes que existen: el juego nunca pide otra.
+import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, rmSync } from 'node:fs'
 import { join, relative, extname } from 'node:path'
 
-const raiz = new URL('..', import.meta.url).pathname
+const raiz = fileURLToPath(new URL('..', import.meta.url))
 const publico = join(raiz, 'public')
 const salida = join(raiz, 'data/variantes-imagenes.json')
 const soloVerificar = process.argv.includes('--verificar')
 const eliminarObsoletos = process.argv.includes('--eliminar-obsoletos')
+if (soloVerificar && eliminarObsoletos) {
+  console.error('Elige --verificar o --eliminar-obsoletos por separado.')
+  process.exit(1)
+}
 const ESCALA_LITE = 0.6
 const MIN_ANCHO_PARA_LITE = 300
 
@@ -49,13 +54,13 @@ const fuentes = ['components', 'composables', 'pages', 'data', 'assets', 'plugin
   .flatMap((d) => recorrer(join(raiz, d))).concat(join(raiz, 'app.vue'))
   .filter((f) => /\.(vue|js|json|css|mjs)$/.test(f) && !f.endsWith('variantes-imagenes.json'))
   .map((f) => readFileSync(f, 'utf8')).join('\n')
-const nombreBase = (tallo) => tallo.split('/').pop()
+const nombreBase = (tallo) => url(tallo).split('/').pop()
 function referenciado(tallo) {
   const base = nombreBase(tallo)
   // Directa: la ruta completa aparece; dinámica: el nombre de pose aparece como literal de una lista ('reposo', "carga-1"...).
   // Los fondos estáticos se derivan por sustitución de texto (levelBackground), no por ruta literal.
-  if (tallo.includes('/arenas/static/')) return true
-  return fuentes.includes(tallo.replace(join(publico), '')) || new RegExp(`['"\`/]${base.replace(/[-]/g, '[-]')}(['"\`.]|-lite)`).test(fuentes)
+  if (url(tallo).includes('/arenas/static/')) return true
+  return fuentes.includes(url(tallo)) || new RegExp(`['"\`/]${base.replace(/[-]/g, '[-]')}(['"\`.]|-lite)`).test(fuentes)
 }
 // .webp completos con .png hermano: exclusivos del antiguo perfil Equilibrada (Alta usa el png, Lite su -lite.webp)
 const paresEquilibrada = [...tallos.values()].filter((t) => t.png && t.webp && !fuentes.includes(url(t.webp)) && !fuentes.includes(url(t.webp).split('/').pop()))
@@ -79,11 +84,11 @@ const errores = []
 if (!soloVerificar) {
   for (const [tallo, t] of tallos) {
     const origen = t.webp ?? t.png
-    if (t.lite || !origen || tallo.includes('/arenas/')) continue // los fondos ya son estáticos y ligeros
+    if (t.lite || !origen || url(tallo).includes('/arenas/')) continue // los fondos ya son estáticos y ligeros
     const m = medir(origen)
     if (m.ancho < MIN_ANCHO_PARA_LITE) continue
     const destino = tallo + '-lite.webp'
-    execFileSync('convert', [origen, '-resize', `${Math.round(ESCALA_LITE * 100)}%`, '-define', 'webp:method=6', '-define', 'webp:alpha-quality=90', '-quality', '80', destino])
+    execFileSync(process.platform === 'win32' ? 'magick' : 'convert', [origen, '-resize', `${Math.round(ESCALA_LITE * 100)}%`, '-define', 'webp:method=6', '-define', 'webp:alpha-quality=90', '-quality', '80', destino])
     t.lite = destino
     generadas++
   }

@@ -16,7 +16,7 @@
           <v-btn variant="tonal" size="small" class="boton-opciones" @click="verEstadisticas = true">{{ t('Estadísticas') }}</v-btn>
           <UiOpcionesRapidas class="rapidas-mapa" />
           <h1>{{ t('Mapa del Reino') }}</h1>
-          <p>{{ t('Sigue el camino dorado. Toca un marcador para entrar en la zona.') }}</p>
+          <p class="guia-mapa">{{ t('Toca un destino: el caballero viajará hasta allí.') }}</p>
           <p v-if="nivelDesbloqueado > niveles.length" class="conquista">{{ t('Completaste todas las zonas del reino.') }}</p>
         </header>
         <!-- El tablero se escala para caber completo en el espacio que queda (sin scroll) -->
@@ -28,7 +28,7 @@
         <div class="zona-mapa">
           <MapBoard class="tablero" :niveles="niveles" :nivel-desbloqueado="nivelDesbloqueado" @elegir="entrar" />
         </div>
-        <MapListaZonas class="lista-zonas sin-barra" :niveles="niveles" :nivel-desbloqueado="nivelDesbloqueado" @elegir="entrar" />
+        <MapListaZonas class="lista-zonas sin-barra" :niveles="niveles" :nivel-desbloqueado="nivelDesbloqueado" :niveles-progreso="progreso.estado.progreso.niveles" @elegir="entrar" />
         <HomeOptions v-model="showOptions" progreso @estadisticas="verEstadisticas = true" />
       </div>
     </section>
@@ -60,6 +60,7 @@
 </template>
 
 <script setup>
+import { mezclarPregunta } from '~/composables/useBarajar.js'
 import nivelesBase from '~/data/niveles.json'
 import contenidos from '~/data/contenidos.json'
 
@@ -159,12 +160,12 @@ const ultimaVariante = {}
 function prepararNivel(nivel) {
   const preguntas = nivel.preguntas.map((base, i) => {
     const opciones = [base, ...(base.variantes ?? [])]
-    if (opciones.length === 1) return base
+    if (opciones.length === 1) return mezclarPregunta(base)
     const clave = `${nivel.numero}-${i}`
     let elegido
     do { elegido = Math.floor(Math.random() * opciones.length) } while (elegido === ultimaVariante[clave])
     ultimaVariante[clave] = elegido
-    return opciones[elegido]
+    return mezclarPregunta(opciones[elegido])
   })
   return { ...nivel, preguntas }
 }
@@ -203,7 +204,7 @@ function volverAlMapa() {
     max(12px, env(safe-area-inset-right))
     max(10px, env(safe-area-inset-bottom))
     max(12px, env(safe-area-inset-left));
-  background: #0b1325;
+  background: radial-gradient(ellipse at 50% 0%, #1b2a4a 0%, #0b1325 60%);
   animation: aparicion-mapa 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -234,6 +235,7 @@ function volverAlMapa() {
 h1 {
   margin-top: 0.25rem;
   color: #ffe09a;
+  text-shadow: 0 0 18px #ffb84d55, 0 2px 0 #000a;
   font-family: 'Cinzel', Georgia, serif;
   font-size: clamp(1.4rem, 4.5vw, 2.4rem);
   line-height: 1.15;

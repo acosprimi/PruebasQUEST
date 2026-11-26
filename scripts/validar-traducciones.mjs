@@ -1,7 +1,8 @@
 // Comprueba que todo texto de interfaz pasado a t('…') tenga traducción al inglés en data/ingles.json.
+import { fileURLToPath } from 'node:url'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-const raiz = new URL('..', import.meta.url).pathname
+const raiz = fileURLToPath(new URL('..', import.meta.url))
 const ingles = JSON.parse(readFileSync(join(raiz, 'data/ingles.json'), 'utf8'))
 const recorrer = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (['node_modules', '.nuxt', '.output', 'dist', 'dev'].includes(e.name) ? [] : recorrer(join(d, e.name))) : [join(d, e.name)]))
 const archivos = ['components', 'pages', 'composables', 'layouts'].flatMap((d) => recorrer(join(raiz, d))).filter((f) => /\.(vue|js)$/.test(f))

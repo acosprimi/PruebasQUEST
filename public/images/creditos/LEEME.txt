@@ -1,2 +1,0 @@
-Coloca aquí las fotografías reales de los cuatro integrantes (JPG o WebP, formato cuadrado o vertical)
-y escribe su ruta en data/creditos.json (campo "foto"). No se incluyen fotografías generadas por IA.
