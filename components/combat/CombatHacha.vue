@@ -37,8 +37,11 @@
       :style="{ rotate: giro + 'deg' }"
       :aria-label="t('Arrastra el hacha para cortar las bolas de energía. Con teclado, usa las flechas.')"
       @pointerdown="tomar" @keydown="teclado">
-      <span class="mango" aria-hidden="true" />
-      <span class="hoja" aria-hidden="true" />
+      <!-- Una sola pieza inclinada: el mango y la hoja giran juntos alrededor de la hoja (antes cada uno giraba sobre su propio centro y se desalineaban) -->
+      <span class="arma" aria-hidden="true">
+        <span class="mango" />
+        <span class="hoja" />
+      </span>
     </button>
   </div>
 </template>
@@ -82,7 +85,7 @@ const giro = ref(0)
 const cantidad = computed(() => Object.keys(cortes.value).length)
 
 // Estado de alta frecuencia: variables normales, no reactivas.
-const medida = { ancho: 0, alto: 0, izq: 0, arriba: 0, radioBola: 20, ancho_hacha: 76, alto_hacha: 76 }
+const medida = { escala: 1, ancho: 0, alto: 0, izq: 0, arriba: 0, radioBola: 20, ancho_hacha: 76, alto_hacha: 76 }
 const hacha = { x: .34, y: .76 } // fracciones del campo (se conserva al girar la pantalla)
 let anterior = { x: 0, y: 0 }
 const estadoBolas = bolas.map((b) => ({ ...b, el: null, x: 0, y: 0, visible: false, peligro: false }))
@@ -113,7 +116,11 @@ function medir() {
   const el = arena.value
   if (!el) return
   const r = el.getBoundingClientRect()
-  medida.ancho = r.width; medida.alto = r.height; medida.izq = r.left; medida.arriba = r.top
+  // Si algún ancestro está escalado (cámara de la escena), el rectángulo visible no coincide con las unidades
+  // locales de translate3d: se calcula la escala y se trabaja siempre en unidades locales.
+  const anchoLocal = el.offsetWidth || r.width
+  medida.escala = anchoLocal ? r.width / anchoLocal || 1 : 1
+  medida.ancho = anchoLocal; medida.alto = el.offsetHeight || r.height; medida.izq = r.left; medida.arriba = r.top
   const b = estadoBolas.find((e) => e.el)?.el
   if (b) medida.radioBola = (b.offsetWidth || 40) / 2
   if (hachaEl.value) { medida.ancho_hacha = hachaEl.value.offsetWidth || 76; medida.alto_hacha = hachaEl.value.offsetHeight || 76 }
@@ -195,8 +202,8 @@ function tomar(evento) {
   puntero = evento.pointerId
   medir() // una sola lectura de geometría por gesto
   agarre = {
-    x: evento.clientX - (medida.izq + hacha.x * medida.ancho),
-    y: evento.clientY - (medida.arriba + hacha.y * medida.alto)
+    x: (evento.clientX - medida.izq) / medida.escala - hacha.x * medida.ancho,
+    y: (evento.clientY - medida.arriba) / medida.escala - hacha.y * medida.alto
   }
   anterior = { x: hacha.x * medida.ancho, y: hacha.y * medida.alto }
 }
@@ -251,7 +258,7 @@ function mueveHacha(destinoX, destinoY) {
 
 function procesarMovimiento(evento) {
   if (puntero !== evento.pointerId || cantidad.value === bolas.length || !medida.ancho || bloqueado()) return
-  mueveHacha(evento.clientX - medida.izq - agarre.x, evento.clientY - medida.arriba - agarre.y)
+  mueveHacha((evento.clientX - medida.izq) / medida.escala - agarre.x, (evento.clientY - medida.arriba) / medida.escala - agarre.y)
 }
 
 function soltar(evento) {
@@ -472,6 +479,8 @@ onBeforeUnmount(() => {
   width: clamp(76px, 13vmin, 108px);
   aspect-ratio: 1;
   translate: -50% -50%;
+  /* El giro y la escala pivotan sobre la hoja (≈ 59,5 % / 26,5 %): es el punto que usa la colisión */
+  transform-origin: 59.5% 26.5%;
   background: radial-gradient(ellipse, #dfa75b55, transparent 69%);
   pointer-events: auto;
   touch-action: none;
@@ -483,12 +492,12 @@ onBeforeUnmount(() => {
 .hacha.moviendo { filter: drop-shadow(0 0 8px var(--energia)) drop-shadow(0 2px 3px #000); }
 .hacha:active { cursor: grabbing; scale: 1.1; }
 .hacha span { position: absolute; pointer-events: none; }
+.arma { inset: 0; rotate: 31deg; transform-origin: 59.5% 26.5%; }
 .mango {
   width: 10%;
   height: 76%;
   left: 45%;
   top: 12%;
-  rotate: 31deg;
   border-radius: 3px;
   background: linear-gradient(90deg, #452619, #c29158 58%, #67402b);
 }
@@ -497,7 +506,6 @@ onBeforeUnmount(() => {
   height: 47%;
   left: 29%;
   top: 3%;
-  rotate: 31deg;
   clip-path: polygon(0 0, 19% 14%, 41% 27%, 59% 27%, 81% 14%, 100% 0, 96% 36%, 100% 100%, 77% 80%, 59% 65%, 41% 65%, 23% 80%, 0 100%, 4% 36%);
   background: linear-gradient(100deg, #f4eedc, #8896a4 15%, #4a525c 49%, #a1acb4 81%, #f4eedc);
 }

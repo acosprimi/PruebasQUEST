@@ -7,7 +7,9 @@ import { reactive, computed } from 'vue'
 export const CLAVE = 'english-quest-v2'
 export const VERSION = 2
 const CLAVES_ANTIGUAS = { graficos: 'english-quest-graphics-v1', nivel: 'english-quest-unlocked-level' }
-export const NIVELES_TOTALES = 4
+export const NIVELES_TOTALES = 5 // cuatro batallas + «La última prueba del reino» (evaluación integradora)
+export const NIVEL_FINAL = 5
+export const APROBACION_INICIAL = 0.7 // el valor real se lee de data/evaluacion.json
 // Solo existen dos perfiles gráficos. Las preferencias antiguas «equilibrada» y «auto» se migran a Lite (alternativa segura).
 export const PERFILES_VALIDOS = ['alta', 'lite']
 const MAX_ERRORES = 60
@@ -37,12 +39,12 @@ export function rangoDe(xp) {
 
 export function ajustesIniciales() {
   return {
-    calidad: 'lite', introVista: false, idioma: 'es',
+    calidad: 'lite', introVista: false, tourVisto: false, idioma: 'es',
     textoEscala: 1, altoContraste: false, movimiento: 'sistema', sinDestellos: false, sinCamara: false,
     volumen: { musica: 0.8, efectos: 1, voces: 1 }, tiempoExtra: 1, practica: false
   }
 }
-const nivelVacio = () => ({ intentos: 0, victorias: 0, derrotas: 0, completado: false, estrellas: 0, mejorAciertos: 0, mejorPrecision: 0, mejorVida: 0, mejorTiempo: null, ultimaFecha: null })
+const nivelVacio = () => ({ intentos: 0, victorias: 0, derrotas: 0, completado: false, estrellas: 0, mejorAciertos: 0, mejorPrecision: 0, mejorVida: 0, mejorTiempo: null, ultimaFecha: null, aprobada: false })
 export function progresoInicial() {
   return {
     desbloqueado: 1, niveles: {}, temas: {}, tipos: {},
@@ -68,6 +70,8 @@ export function validarDatos(bruto) {
   // Migración: «equilibrada», «auto» o un valor desconocido pasan a Lite; el progreso educativo no se toca.
   a.calidad = PERFILES_VALIDOS.includes(aj.calidad) ? aj.calidad : 'lite'
   a.introVista = aj.introVista === true
+  // Quien ya había completado la preparación en una versión anterior no vuelve a ver el recorrido inicial.
+  a.tourVisto = typeof aj.tourVisto === 'boolean' ? aj.tourVisto : aj.introVista === true
   a.idioma = aj.idioma === 'en' ? 'en' : 'es'
   a.textoEscala = [1, 1.15, 1.3].includes(aj.textoEscala) ? aj.textoEscala : 1
   a.altoContraste = aj.altoContraste === true
@@ -83,12 +87,12 @@ export function validarDatos(bruto) {
   const p = base.progreso
   p.desbloqueado = ent(pr.desbloqueado, 1, NIVELES_TOTALES + 1, 1)
   for (const [k, n] of Object.entries(esObjeto(pr.niveles) ? pr.niveles : {})) {
-    if (!/^[1-4]$/.test(k) || !esObjeto(n)) { reparado = true; continue }
+    if (!/^[1-5]$/.test(k) || !esObjeto(n)) { reparado = true; continue }
     p.niveles[k] = {
       intentos: ent(n.intentos, 0, 1e6, 0), victorias: ent(n.victorias, 0, 1e6, 0), derrotas: ent(n.derrotas, 0, 1e6, 0),
       completado: n.completado === true, estrellas: ent(n.estrellas, 0, 3, 0), mejorAciertos: ent(n.mejorAciertos, 0, 50, 0),
       mejorPrecision: num(n.mejorPrecision, 0, 1, 0), mejorVida: ent(n.mejorVida, 0, 100, 0),
-      mejorTiempo: Number.isFinite(n.mejorTiempo) ? num(n.mejorTiempo, 0, 1e6, null) : null, ultimaFecha: fecha(n.ultimaFecha)
+      mejorTiempo: Number.isFinite(n.mejorTiempo) ? num(n.mejorTiempo, 0, 1e6, null) : null, ultimaFecha: fecha(n.ultimaFecha), aprobada: n.aprobada === true
     }
   }
   const contadores = (origen) => Object.fromEntries(Object.entries(esObjeto(origen) ? origen : {}).slice(0, 40)
@@ -209,7 +213,7 @@ export function crearProgreso(storage, { ahora = () => new Date(), diferirGuarda
 
   // Registra el resultado de una partida. «historial» es el del motor de combate (una entrada por ronda).
   // La práctica y el refuerzo no pasan por aquí: no alteran intentos, estrellas ni experiencia.
-  function registrarPartida({ nivel: n, tema, resultado, historial, vidaCaballero = 0, segundos = 0, combate = {}, totalRondas = 6 }) {
+  function registrarPartida({ nivel: n, tema, resultado, historial, vidaCaballero = 0, segundos = 0, combate = {}, totalRondas = 6, aprobacion = APROBACION_INICIAL, minimoPorTema = 3 }) {
     const p = estado.progreso
     const antes = { xp: xp.value, rango: rango.value.id, estrellas: nivel(n).estrellas, completado: nivel(n).completado }
     const registro = nivel(n)
@@ -220,7 +224,7 @@ export function crearProgreso(storage, { ahora = () => new Date(), diferirGuarda
     const precision = lingu.length ? aciertos / lingu.length : 0
     p.segundosActividades += Math.round(historial.reduce((t, h) => t + (h.segundos || 0), 0))
     for (const h of historial) {
-      if (esLinguistico(h.tipo)) { contar(p.temas, tema, h.acierto); contar(p.tipos, h.tipo, h.acierto) }
+      if (esLinguistico(h.tipo)) { contar(p.temas, h.tema ?? tema, h.acierto); contar(p.tipos, h.tipo, h.acierto) }
       const clave = claveRefuerzo(n, h.texto)
       if (!h.acierto && esLinguistico(h.tipo)) {
         const r = p.refuerzo[clave]
@@ -230,6 +234,24 @@ export function crearProgreso(storage, { ahora = () => new Date(), diferirGuarda
         p.refuerzo[clave].aciertosSeguidos++
         if (p.refuerzo[clave].aciertosSeguidos >= 2) delete p.refuerzo[clave]
       }
+    }
+    // Evaluación integradora: el resultado EDUCATIVO se calcula aparte del resultado de COMBATE.
+    // Solo cuentan las respuestas lingüísticas; una victoria sobre el guardián no equivale a aprobar.
+    let final = null
+    if (n === NIVEL_FINAL) {
+      const grupos = new Map()
+      for (const h of lingu) {
+        const g = grupos.get(h.tema) ?? { tema: h.tema, fase: h.fase ?? 0, aciertos: 0, total: 0 }
+        g.total++; if (h.acierto) g.aciertos++
+        grupos.set(h.tema, g)
+      }
+      const porTema = [...grupos.values()].sort((a, b) => a.fase - b.fase).map((g) => ({ ...g, precision: g.total ? g.aciertos / g.total : 0, aprobado: g.total >= minimoPorTema && g.aciertos / g.total >= aprobacion }))
+      const completo = lingu.length >= totalRondas
+      final = { completo, umbral: aprobacion, aprobada: completo && precision >= aprobacion && porTema.every((g) => g.aprobado) || (completo && precision >= aprobacion && porTema.length > 0 && porTema.filter((g) => !g.aprobado).length === 0), porTema, reforzar: porTema.filter((g) => !g.aprobado) }
+      // «Aprobada» exige todos los desafíos lingüísticos, el porcentaje global y el mínimo en cada temática.
+      final.aprobada = completo && precision >= aprobacion && final.reforzar.length === 0
+      if (completo) registro.mejorPrecision = Math.max(registro.mejorPrecision, precision)
+      if (final.aprobada) registro.aprobada = true
     }
     const claves = Object.keys(p.refuerzo)
     if (claves.length > MAX_ERRORES) claves.sort((a, b) => (p.refuerzo[a].ultimaFecha || '').localeCompare(p.refuerzo[b].ultimaFecha || '')).slice(0, claves.length - MAX_ERRORES).forEach((k) => delete p.refuerzo[k])
@@ -259,7 +281,7 @@ export function crearProgreso(storage, { ahora = () => new Date(), diferirGuarda
       motrices: historial.filter((h) => !esLinguistico(h.tipo)),
       combate, vidaCaballero,
       recompensas: { xp: xp.value - antes.xp, estrellasNuevas: Math.max(0, registro.estrellas - antes.estrellas), estrellas: registro.estrellas, primeraVictoria: resultado === 'victoria' && !antes.completado, rangoNuevo: rango.value.id !== antes.rango ? rango.value : null },
-      dominados, refuerzo
+      dominados: final ? final.porTema.filter((g) => g.aprobado).map((g) => g.tema) : dominados, refuerzo: final ? final.reforzar.map((g) => g.tema) : refuerzo, final
     }
   }
 

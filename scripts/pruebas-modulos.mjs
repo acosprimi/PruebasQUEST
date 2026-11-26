@@ -43,10 +43,11 @@ const n1 = niveles[0]
   timers = []
   const { j } = motor(n1)
   j.responder(n1.preguntas[0].correcta)
+  const esperado = Math.min(j.danoDisponible(), j.fuerza(j.ataques[1]))
   j.atacar(j.ataques[1])
   const v = j.vidaRival.value
   avanzar(5000) // la escena nunca avisa (animación interrumpida o desactivada)
-  ok(v - j.vidaRival.value === j.ataques[1].dano + 0 && j.fase.value === 'aviso-contra', 'sin eventos de la escena, la vigilancia aplica el golpe una vez y avanza al contraataque')
+  ok(v - j.vidaRival.value === esperado && j.fase.value === 'aviso-contra', 'sin eventos de la escena, la vigilancia aplica el golpe una vez y avanza al contraataque')
   j.destruir()
   ok(timers.length === 0, 'destruir() limpia todos los temporizadores del combate (' + timers.length + ' pendientes)')
 }
@@ -155,7 +156,7 @@ const memoriaAlmacen = (inicial = {}, { falla } = {}) => {
   const r = leerAlmacen(memoriaAlmacen({ [CLAVE]: '{esto no es json' }))
   ok(r.origen === 'recuperado' && r.datos.progreso.desbloqueado === 1, 'datos corruptos: se recupera con valores limpios')
   const raros = validarDatos({ app: 'english-quest', version: 2, ajustes: { calidad: 'ultra', volumen: { musica: 9, efectos: -2 }, textoEscala: 7 }, progreso: { desbloqueado: 99, niveles: { 9: {}, 1: { estrellas: 77, mejorPrecision: 3 } } } }).datos
-  ok(raros.ajustes.calidad === 'lite' && raros.ajustes.volumen.musica === 1 && raros.ajustes.volumen.efectos === 0 && raros.ajustes.textoEscala === 1 && raros.progreso.desbloqueado === 5 && !raros.progreso.niveles[9] && raros.progreso.niveles[1].estrellas === 3 && raros.progreso.niveles[1].mejorPrecision === 1, 'validación: valores fuera de rango o desconocidos se corrigen')
+  ok(raros.ajustes.calidad === 'lite' && raros.ajustes.volumen.musica === 1 && raros.ajustes.volumen.efectos === 0 && raros.ajustes.textoEscala === 1 && raros.progreso.desbloqueado === 6 && !raros.progreso.niveles[9] && raros.progreso.niveles[1].estrellas === 3 && raros.progreso.niveles[1].mejorPrecision === 1, 'validación: valores fuera de rango o desconocidos se corrigen')
   ok(leerAlmacen(memoriaAlmacen({ [CLAVE]: JSON.stringify({ app: 'english-quest', version: 99 }) })).origen === 'recuperado', 'una versión futura desconocida no se interpreta')
 }
 {

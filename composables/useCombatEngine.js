@@ -148,7 +148,7 @@ export function useCombatEngine({
     const q = pregunta.value
     historial.value.push({
       pregunta: q, respuesta: respuesta.value, acierto, agotado: agotado.value, ...extra,
-      tipo: q.tipo, texto: q.texto, correcta: q.correcta, explicacion: q.explicacion, indice: indice.value,
+      tipo: q.tipo, texto: q.texto, correcta: q.correcta, explicacion: q.explicacion, indice: indice.value, tema: q.tema, fase: q.fase,
       segundos: Math.round(segundosRonda * 10) / 10
     })
   }
@@ -214,9 +214,32 @@ export function useCombatEngine({
     const reserva = Math.ceil(nivel().vida * pendientes / (2 * nivel().preguntas.length))
     return Math.max(0, vidaRival.value - reserva)
   }
+  // ── Progresión ascendente del daño (lógica compartida por todas las escenas: vive aquí, en el motor).
+  // Cada ronda que puede terminar en ataque (todas salvo «clasificar») tiene un daño planificado que crece ronda a
+  // ronda y que culmina en un golpe final importante. Los ataques secundarios (palabras clasificadas, hechizo roto)
+  // son pequeños y se descuentan del presupuesto. Si se falla alguna ronda, el guardián sobrevive: no se regala la victoria.
+  const danoSecundario = () => Math.max(4, Math.round(nivel().vida * 0.06))
+  function planDano() {
+    const q = nivel().preguntas
+    const rondas = q.map((p, i) => [p, i]).filter(([p]) => p.tipo !== 'clasificar').map(([, i]) => i)
+    const secundarios = q.reduce((t, p) => t + (p.tipo === 'clasificar' ? (p.palabras ?? []).filter((w) => !w.futuro).length : p.tipo === 'romper-hechizo' ? 1 : 0), 0)
+    const presupuesto = Math.max(nivel().vida * 0.5, nivel().vida - secundarios * danoSecundario())
+    const m = rondas.length
+    // pesos 1 → 3 de forma lineal y un último golpe 1,4 veces mayor que el penúltimo
+    const pesos = rondas.map((_, k) => (k < m - 1 ? 1 + (2 * k) / Math.max(1, m - 2) : m > 1 ? 3 * 1.4 : 1))
+    const total = pesos.reduce((a, b) => a + b, 0) || 1
+    return rondas.map((indiceRonda, k) => ({ indice: indiceRonda, dano: Math.round(presupuesto * pesos[k] / total), ultima: k === m - 1 }))
+  }
+  function danoPlanificado() { return planDano().find((x) => x.indice === indice.value) ?? { dano: 0, ultima: false } }
   function fuerza(movimiento) {
-    const base = movimiento.dano + (nivel().debilidad === movimiento.id ? 4 : 0)
-    return furia.value >= FURIA_MAXIMA ? Math.round(base * BONO_FURIA) : base
+    const plan = danoPlanificado()
+    // El tipo de ataque y la debilidad del guardián modifican el daño planificado, no lo sustituyen.
+    const relativo = movimiento.dano / 24 * (nivel().debilidad === movimiento.id ? 1.15 : 1)
+    const base = Math.max(1, Math.round(plan.dano * relativo))
+    const total = furia.value >= FURIA_MAXIMA ? Math.round(base * BONO_FURIA) : base
+    // Golpe final: solo en la última ronda ofensiva y solo si el estudiante llega con la vida del guardián dentro de lo previsto.
+    if (plan.ultima && vidaRival.value <= Math.round(plan.dano * 1.75)) return Math.max(total, vidaRival.value)
+    return total
   }
   function ganarFuria() { furia.value = Math.min(FURIA_MAXIMA, furia.value + 1) }
 
@@ -246,7 +269,7 @@ export function useCombatEngine({
     }
     fase.value = 'conjuro'
     if (pregunta.value.tipo === 'romper-hechizo') {
-      const dano = Math.min(12, danoDisponible())
+      const dano = Math.min(danoSecundario(), danoDisponible())
       vidaRival.value -= dano
       mostrarEfectoPalabra('monstruo', 'dano', `−${dano} PV`)
       sonar('golpe', 'rayo')
@@ -313,7 +336,7 @@ export function useCombatEngine({
       mostrarEfectoPalabra(destino, 'cura', recuperado ? `+${recuperado} PV` : t('Vida al máximo'))
       return
     }
-    const dano = Math.min(danoDisponible(), DANO_PALABRA)
+    const dano = Math.min(danoDisponible(), danoSecundario())
     vidaRival.value -= dano
     mostrarEfectoPalabra(destino, 'dano', `−${dano} PV`)
     sonar('golpe', 'escudo')
@@ -549,7 +572,7 @@ export function useCombatEngine({
     // acciones
     iniciar, destruir, reiniciarReferencia, pausar, reanudar, responder, resolverConjuro, cortarAtaque, esquivar, completarAviso,
     aplicarPalabra, palabraIncorrecta, completarPalabras, atacar, probarRemate, impactar, terminarAtaque, parar: parada,
-    teclaParada, siguiente, agotar, resumen, danoDisponible, fuerza, reloj,
+    teclaParada, siguiente, agotar, resumen, danoDisponible, fuerza, planDano, reloj,
     // referencia temporal compartida con las actividades (proyectiles, colisiones)
     tiempoActivo: () => reloj.tiempoActivo(), relojDetenido: () => reloj.detenido(),
     ataques: ATAQUES, FURIA_MAXIMA

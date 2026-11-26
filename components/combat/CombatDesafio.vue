@@ -3,11 +3,15 @@
     <AudioEfecto :ruta="golpeSonido.ruta" :disparo="golpeSonido.disparo" />
     <AudioEfecto :ruta="vozJefe.ruta" :disparo="vozJefe.disparo" :volumen="0.75" canal="voces" />
     <header class="cabecera">
-      <AudioSonidoBoton @click="emit('volver')">
-        <v-btn variant="text" color="amber-lighten-3">{{ t('Volver al mapa') }}</v-btn>
+      <AudioSonidoBoton @click="pedirSalida">
+        <v-btn variant="text" color="amber-lighten-3" class="btn-volver">{{ t('Volver al mapa') }}</v-btn>
       </AudioSonidoBoton>
       <h1>{{ nivel.nombre }} <small>{{ nivel.tema }}</small></h1>
-      <v-btn v-if="puedePausar" variant="text" color="amber-lighten-3" class="boton-pausa" :aria-label="t('Pausar el desafío')" @click="motor.pausar">{{ t('Pausa') }}</v-btn>
+      <v-btn v-if="puedePausar" variant="text" color="amber-lighten-3" class="boton-pausa" :aria-label="t('Pausar el desafío')" @click="abrirPausa">{{ t('Pausa') }}</v-btn>
+      <!-- Gráficos y Accesibilidad: dos controles independientes. Al abrirlos el combate se pausa; el cambio de perfil se aplica en un momento seguro. -->
+      <UiOpcionesRapidas ref="rapidas" class="rapidas-combate" diferido :pendiente="perfilPendiente" :preparando="preparandoPerfil" :error-perfil="errorPerfil"
+        @abrir="alAbrirAjustes" @cerrar="alCerrarAjustes" @elegir-perfil="elegirPerfil" />
+      <!-- Controles de desarrollo: import.meta.dev es false en la compilación publicada, así que nunca se muestran ni se activan. -->
       <AudioSonidoBoton v-if="modoPruebas" @click="superarPrueba">
         <v-btn variant="tonal" color="amber-lighten-3">{{ t('Superar prueba') }}</v-btn>
       </AudioSonidoBoton>
@@ -76,7 +80,7 @@
                   @mover-heroe="desplazamientoEsquiva = $event" @esquivar="esquivar" @completar="completarAviso" />
                 <p v-if="ataque?.lado && pregunta.tipo === 'esquivar'" class="aviso-completado" lang="en">{{ pregunta.texto }}</p>
                 <p v-if="ataque?.esquivado && pregunta.tipo === 'esquiva-frase'" class="aviso-completado" lang="en">
-                  It <strong>{{ respuesta }}</strong> attack!
+                  {{ pregunta.texto.split('___')[0] }}<strong>{{ respuesta }}</strong>{{ pregunta.texto.split('___')[1] }}
                 </p>
                 <div v-if="efectoPalabra" :key="efectoPalabra.id" class="efecto-palabra"
                   :class="[efectoPalabra.destino, efectoPalabra.tipo]" role="status">{{ t(efectoPalabra.texto).replace('PV', t('PV')) }}</div>
@@ -99,7 +103,7 @@
           :pregunta="pregunta" @responder="responder" />
       </div>
 
-      <aside v-if="fase !== 'pregunta' || rondaPanel" class="panel sin-barra" :class="{ resultado: fase === 'resultado' }" :aria-label="t('Desafío de inglés')">
+      <aside v-if="(fase !== 'pregunta' && fase !== 'resultado') || (fase === 'pregunta' && rondaPanel)" class="panel sin-barra" :class="{ revision: fase === 'revision' }" :aria-label="t('Desafío de inglés')">
         <template v-if="fase === 'pregunta'">
           <CombatErrores v-if="pregunta.tipo === 'errores'" :key="indice" :pregunta="pregunta" @responder="responder" />
           <CombatParejas v-if="pregunta.tipo === 'parejas'" :key="indice" :pregunta="pregunta" @responder="responder" />
@@ -148,66 +152,59 @@
         </template>
 
         <template v-else-if="fase === 'revision'">
-          <h2>{{ ultimaRespuesta.acierto ? (rondaEsquiva ? t('¡Esquiva lograda!') : t('¡Buen golpe!')) : ultimaRespuesta.agotado ? t('Se acabó el tiempo') : t('El guardián te alcanzó') }}</h2>
-          <p>{{ t('Respuesta correcta') }} <strong lang="en">{{ pregunta.correcta }}</strong></p>
-          <p v-if="!retro.acierto && retro.respuesta && !esMotriz">{{ t('Tu respuesta') }} <span lang="en">{{ retro.respuesta }}</span></p>
-          <p class="retro"><b>{{ t(retro.acierto ? 'Por qué es correcta' : 'Qué pasó') }}</b> {{ pregunta.explicacion }}</p>
-          <p v-if="retro.regla" class="retro"><b>{{ t('Regla para repasar') }}</b> {{ t(retro.regla) }}</p>
-          <p v-if="retro.consejo" class="retro"><b>{{ t('Cómo resolver algo parecido') }}</b> {{ t(retro.consejo) }}</p>
-          <p v-if="recomendacion" class="retro aviso-calidad" role="status">
-            {{ t('El juego ha perdido fluidez. ¿Quieres usar una calidad gráfica inferior?') }}
-            <v-btn size="small" variant="tonal" @click="aplicarSugerencia">{{ t('Cambiar a Lite') }}</v-btn>
-            <v-btn size="small" variant="text" @click="descartarRecomendacion">{{ t('Ahora no') }}</v-btn>
-          </p>
-          <p v-if="aviso" class="retro aviso-calidad" role="status">{{ aviso }}</p>
+          <!-- Retroalimentación compacta: acierto/fallo, consecuencia y explicación corta. El detalle va plegado y el botón siempre visible. -->
+          <div class="rv-cuerpo">
+            <p class="rv-cabeza" role="status">
+              <strong :class="retro.acierto ? 'rv-ok' : 'rv-mal'">{{ retro.acierto ? '✔ ' + t('Respuesta correcta') : '✖ ' + t('Respuesta incorrecta') }}</strong>
+              <span v-if="textoConsecuencia" class="rv-cons">{{ textoConsecuencia }}</span>
+            </p>
+            <p class="rv-expl"><b lang="en">{{ pregunta.correcta }}</b> — {{ pregunta.explicacion }}</p>
+            <details class="rv-mas">
+              <summary>{{ t('Más ayuda') }}</summary>
+              <p v-if="!retro.acierto && retro.respuesta && !esMotriz">{{ t('Tu respuesta') }} <span lang="en">{{ retro.respuesta }}</span></p>
+              <p v-if="retro.regla" class="retro"><b>{{ t('Regla para repasar') }}</b> {{ t(retro.regla) }}</p>
+              <p v-if="retro.consejo" class="retro"><b>{{ t('Cómo resolver algo parecido') }}</b> {{ t(retro.consejo) }}</p>
+            </details>
+            <p v-if="recomendacion" class="retro aviso-calidad" role="status">
+              {{ t('El juego ha perdido fluidez. ¿Quieres usar una calidad gráfica inferior?') }}
+              <v-btn size="small" variant="tonal" @click="aplicarSugerencia">{{ t('Cambiar a Lite') }}</v-btn>
+              <v-btn size="small" variant="text" @click="descartarRecomendacion">{{ t('Ahora no') }}</v-btn>
+            </p>
+            <p v-if="perfilPendiente" class="retro aviso-calidad" role="status">{{ t('Cambio de gráficos pendiente: se aplicará ahora.') }}</p>
+            <p v-if="aviso" class="retro aviso-calidad" role="status">{{ aviso }}</p>
+          </div>
           <AudioSonidoBoton @click="siguiente">
-            <v-btn block color="amber-lighten-3">{{ t('Siguiente pregunta') }}</v-btn>
+            <v-btn block class="rv-siguiente" color="amber-lighten-3">{{ t('Siguiente pregunta') }}</v-btn>
           </AudioSonidoBoton>
-        </template>
-
-        <template v-else>
-          <h2>{{ pruebaRemate ? t('Prueba de remate completada') : vidaRival === 0 ? t('¡Victoria!') : t('Fin del desafío') }}</h2>
-          <div v-if="registroRepaso" class="repaso" aria-live="polite">
-            <h3 lang="en">{{ registroRepaso.pregunta.texto }}</h3>
-            <p>{{ t('Tu respuesta') }} <span lang="en">{{ registroRepaso.respuesta || t('Sin respuesta') }}</span></p>
-            <p>{{ t('Respuesta correcta') }} <strong lang="en">{{ registroRepaso.pregunta.correcta }}</strong></p>
-            <p>{{ registroRepaso.pregunta.explicacion }}</p>
-            <div class="paginas">
-              <v-btn size="small" :disabled="indiceRepaso === 0" @click="indiceRepaso--">{{ t('Anterior') }}</v-btn>
-              <span>{{ indiceRepaso + 1 }} / {{ historial.length }}</span>
-              <v-btn size="small" :disabled="indiceRepaso + 1 === historial.length" @click="indiceRepaso++">{{ t('Siguiente') }}</v-btn>
-              <v-btn size="small" @click="indiceRepaso = null">{{ t('Volver al resultado') }}</v-btn>
-            </div>
-          </div>
-          <template v-else-if="!pruebaRemate">
-            <div v-if="nivel.numero === 4 && vidaRival === 0" class="epilogo-real" role="status" aria-live="polite">
-              <span class="epilogo-sello" aria-hidden="true">{{ t('✦ Victoria del Reino ✦') }}</span>
-              <p>{{ t('Lo has logrado, regresaste al castillo del rey; serás recordado hasta el fin de los tiempos.') }}</p>
-            </div>
-            <p>{{ mensajeFinal }}</p>
-            <CombatInforme v-if="informe" :informe="informe" :nivel="nivel" />
-            <p v-else>{{ t('Aciertos') }} {{ aciertos }} {{ t(' de ') }}{{ historial.length }}.</p>
-            <v-btn v-if="historial.length" variant="text" color="amber-lighten-3" @click="indiceRepaso = 0">
-              {{ t('Revisar respuestas') }}
-            </v-btn>
-          </template>
-          <div v-if="!registroRepaso" class="opciones">
-            <AudioSonidoBoton @click="emit('volver')">
-              <v-btn block color="amber-lighten-3" variant="flat">{{ t('Regresar al mapa') }}</v-btn>
-            </AudioSonidoBoton>
-            <AudioSonidoBoton @click="emit('reintentar')">
-              <v-btn block color="amber-lighten-3" variant="tonal">{{ t('Reintentar') }}</v-btn>
-            </AudioSonidoBoton>
-          </div>
         </template>
       </aside>
     </div>
-    <div v-if="pausado" class="pausa" role="dialog" aria-modal="true" :aria-label="t('Desafío en pausa')">
+    <!-- Pantalla de resultados: aparece al terminar la secuencia final, sin reducir el escenario durante la animación -->
+    <button v-if="fase === 'resultado' && !mostrarResultados" type="button" class="ver-resultados" @click="mostrarResultados = true">{{ t('Ver resultados') }}</button>
+    <LazyCombatResultados v-if="mostrarResultados" :informe="informe" :nivel="nivel" :historial="historial" :victoria="vidaRival === 0" :prueba-remate="pruebaRemate"
+      :practica="progreso.estado.ajustes.practica" :aciertos="aciertos"
+      @volver="emit('volver')" @reintentar="emit('reintentar')" @reforzar="(n) => emit('reforzar', n)" @menu="emit('menu')" />
+
+    <div v-if="menuPausa || confirmandoSalida" class="pausa" role="dialog" aria-modal="true" aria-labelledby="pausa-titulo" @keydown.esc.stop="confirmandoSalida ? cancelarSalida() : continuarPausa()">
       <div class="pausa-caja">
-        <h2>{{ t('Desafío en pausa') }}</h2>
-        <p>{{ t('El tiempo está detenido y no pierdes progreso.') }}</p>
-        <v-btn color="amber-lighten-3" variant="flat" autofocus @click="motor.reanudar">{{ t('Continuar') }}</v-btn>
-        <v-btn variant="tonal" color="amber-lighten-3" @click="emit('volver')">{{ t('Volver al mapa') }}</v-btn>
+        <template v-if="confirmandoSalida">
+          <h2 id="pausa-titulo">{{ t('¿Volver al mapa?') }}</h2>
+          <p>{{ t('Perderás el progreso de esta batalla.') }}</p>
+          <v-btn color="amber-lighten-3" variant="flat" autofocus @click="cancelarSalida">{{ t('Seguir luchando') }}</v-btn>
+          <v-btn variant="tonal" color="amber-lighten-3" @click="emit('volver')">{{ t('Sí, volver al mapa') }}</v-btn>
+        </template>
+        <template v-else>
+          <h2 id="pausa-titulo">{{ t('Desafío en pausa') }}</h2>
+          <p>{{ t('El tiempo está detenido y no pierdes progreso.') }}</p>
+          <v-btn color="amber-lighten-3" variant="flat" autofocus @click="continuarPausa">{{ t('Continuar') }}</v-btn>
+          <v-btn variant="tonal" color="amber-lighten-3" :aria-expanded="verInstrucciones" @click="verInstrucciones = !verInstrucciones">{{ t('Instrucciones de la actividad') }}</v-btn>
+          <p v-if="verInstrucciones" class="retro">{{ instruccion }}</p>
+          <div class="pausa-ajustes">
+            <v-btn variant="tonal" color="amber-lighten-3" @click="rapidas?.abrir('graficos')">{{ t('Gráficos') }}</v-btn>
+            <v-btn variant="tonal" color="amber-lighten-3" @click="rapidas?.abrir('accesibilidad')">{{ t('Accesibilidad') }}</v-btn>
+          </div>
+          <v-btn variant="tonal" color="amber-lighten-3" @click="confirmandoSalida = true">{{ t('Regresar al mapa') }}</v-btn>
+        </template>
       </div>
     </div>
   </section>
@@ -225,11 +222,12 @@ import CombatParejas from './CombatParejas.vue'
 import CombatEscuchar from './CombatEscuchar.vue'
 import CombatInforme from './CombatInforme.vue'
 import lecciones from '~/data/lecciones.json'
+import evaluacion from '~/data/evaluacion.json'
 
 const props = defineProps({ nivel: { type: Object, required: true } })
-const emit = defineEmits(['victoria', 'volver', 'reintentar'])
+const emit = defineEmits(['victoria', 'volver', 'reintentar', 'reforzar', 'menu'])
 const { t } = useLanguage()
-const { quality, recomendacion, aplicarRecomendacion, descartarRecomendacion } = useGameGraphics()
+const { quality, recomendacion, aplicarRecomendacion, descartarRecomendacion, levelEssentials, prepareImages, setQuality, releaseScope } = useGameGraphics()
 const progreso = usePlayerProgress()
 
 // La escena pesada y la Lite son módulos distintos: solo se descarga y monta la que corresponde al perfil.
@@ -249,7 +247,7 @@ const rutasSonido = {
 // Dos canales para que la voz del jefe y el golpe puedan sonar a la vez
 const golpeSonido = reactive({ ruta: '', disparo: 0 })
 const vozJefe = reactive({ ruta: '', disparo: 0 })
-const sonidosJefe = computed(() => `/audio/combate/jefe-${props.nivel.numero}`)
+const sonidosJefe = computed(() => `/audio/combate/jefe-${props.nivel.numeroArte ?? props.nivel.numero}`)
 function sonar(canal, clave) {
   const destino = canal === 'voz' ? vozJefe : golpeSonido
   destino.ruta = rutasSonido[canal](clave)
@@ -264,7 +262,7 @@ const motor = useCombatEngine({
   ajustes: { tiempoExtra: () => progreso.estado.ajustes.tiempoExtra, practica: () => progreso.estado.ajustes.practica },
   alTerminar: (resumen) => {
     const r = resumen.resultado === 'incompleto' ? { ...resumen, resultado: 'derrota' } : resumen
-    informe.value = progreso.registrarPartida(r)
+    informe.value = progreso.registrarPartida({ ...r, aprobacion: evaluacion.aprobacion, minimoPorTema: evaluacion.minimoPorTema })
   }
 })
 const {
@@ -341,7 +339,7 @@ const consignaCampo = computed(() => {
 })
 
 // Retroalimentación: por qué es correcta, qué falló, qué regla revisar y cómo resolver algo parecido.
-const leccion = computed(() => lecciones.niveles[props.nivel.numero])
+const leccion = computed(() => lecciones.niveles[pregunta.value?.fase ?? props.nivel.numero])
 const esMotriz = computed(() => TIPOS_MOTRICES.includes(pregunta.value.tipo))
 const retro = computed(() => {
   const r = ultimaRespuesta.value
@@ -360,8 +358,92 @@ watch([quality, momentoSeguro], () => {
   if (momentoSeguro.value && perfilEscena.value !== quality.value) perfilEscena.value = quality.value
 })
 function aplicarSugerencia() { aplicarRecomendacion(); aviso.value = '' }
+
+// ── Pausa, ajustes y salida ────────────────────────────────────────────────────────────────────────────
+const rapidas = ref(null)
+const menuPausa = ref(false)
+const confirmandoSalida = ref(false)
+const verInstrucciones = ref(false)
+let pausadoPorAjustes = false
+let pausadoPorSalida = false
+function abrirPausa() { if (!puedePausar.value || menuPausa.value) return; motor.pausar(); menuPausa.value = true }
+function continuarPausa() { menuPausa.value = false; verInstrucciones.value = false; motor.reanudar() }
+function pedirSalida() {
+  if (fase.value === 'resultado') { emit('volver'); return }
+  if (!pausado.value) { motor.pausar(); pausadoPorSalida = pausado.value }
+  confirmandoSalida.value = true
+}
+function cancelarSalida() {
+  confirmandoSalida.value = false
+  if (pausadoPorSalida && !menuPausa.value) motor.reanudar()
+  pausadoPorSalida = false
+}
+// Abrir Gráficos o Accesibilidad pausa el reloj (solo si el combate admite pausa); cerrarlos lo reanuda sin ventajas ni eventos duplicados.
+function alAbrirAjustes() { if (!pausado.value && puedePausar.value) { motor.pausar(); pausadoPorAjustes = pausado.value } }
+function alCerrarAjustes() { if (pausadoPorAjustes) { pausadoPorAjustes = false; if (!menuPausa.value && !confirmandoSalida.value) motor.reanudar() } }
+
+// ── Cambio de perfil gráfico sin reiniciar: se prepara el nuevo perfil y la escena se sustituye en el siguiente momento seguro.
+// Durante transformaciones, ataques, remates o arrastres el cambio queda pendiente (el motor y su estado no se tocan).
+const perfilPendiente = ref(null)
+const preparandoPerfil = ref(false)
+const errorPerfil = ref(false)
+let temporizadorLiberar = 0
+function elegirPerfil(id) {
+  errorPerfil.value = false
+  if (id === quality.value) { perfilPendiente.value = null; return }
+  perfilPendiente.value = id
+  aplicarPerfil()
+}
+async function aplicarPerfil() {
+  const id = perfilPendiente.value
+  if (!id || !momentoSeguro.value || preparandoPerfil.value) return
+  preparandoPerfil.value = true
+  const ambito = `nivel-${props.nivel.numero}-${id}`
+  let correcto = true
+  try {
+    const r = await prepareImages(levelEssentials(props.nivel, id), { profile: id, ambito })
+    correcto = !(r && r.total > 0 && r.loaded === 0)
+  } catch { correcto = false }
+  preparandoPerfil.value = false
+  if (perfilPendiente.value !== id) return
+  perfilPendiente.value = null
+  if (!correcto) { errorPerfil.value = true; releaseScope(ambito); return } // se conserva el perfil anterior
+  setQuality(id, ambito) // guarda la preferencia y libera los recursos del perfil anterior; la escena cambia en el mismo momento seguro
+  clearTimeout(temporizadorLiberar)
+  temporizadorLiberar = window.setTimeout(() => releaseScope(ambito), 3000)
+}
+watch(momentoSeguro, aplicarPerfil)
+
+// ── Consecuencia del último ataque (para la retroalimentación compacta)
+const consecuencias = ref([])
+watch(danoAplicado, (v) => {
+  const golpe = ataque.value
+  if (v === null || !golpe) return
+  consecuencias.value.push({ a: golpe.id === 'rival' || golpe.contra ? 'caballero' : 'guardian', n: v })
+})
+const textoConsecuencia = computed(() => {
+  const partes = consecuencias.value.map((c) => c.a === 'guardian'
+    ? `${t('Golpeaste al guardián')}: −${c.n} ${t('PV')}`
+    : c.n > 0 ? `${t('Recibiste daño')}: −${c.n} ${t('PV')}` : t('Bloqueaste el golpe'))
+  if (!partes.length && ultimaRespuesta.value?.acierto && rondaEsquiva.value) return t('¡Esquivaste el golpe!')
+  return partes.join(' · ')
+})
+
+// ── Pantalla de resultados: tras la secuencia final, con una breve pausa para ver la pose de victoria
+const mostrarResultados = ref(false)
+let temporizadorResultados = 0
+watch(fase, (f) => {
+  clearTimeout(temporizadorResultados)
+  if (f === 'pregunta') consecuencias.value = []
+  if (f === 'resultado') temporizadorResultados = window.setTimeout(() => { mostrarResultados.value = true }, vidaRival.value === 0 && !pruebaRemate.value ? 1800 : 600)
+  else mostrarResultados.value = false
+})
 function teclaGlobal(evento) {
-  if (evento.key === 'Escape') { pausado.value ? motor.reanudar() : motor.pausar(); return }
+  if (evento.key === 'Escape') {
+    if (document.querySelector('.v-overlay--active') || mostrarResultados.value) return // el diálogo abierto gestiona su propio Esc
+    if (confirmandoSalida.value) cancelarSalida(); else if (menuPausa.value) continuarPausa(); else abrirPausa()
+    return
+  }
   motor.teclaParada(evento)
 }
 onMounted(() => {
@@ -371,6 +453,8 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', teclaGlobal)
+  clearTimeout(temporizadorResultados); clearTimeout(temporizadorLiberar)
+  releaseScope(`nivel-${props.nivel.numero}-${perfilPendiente.value ?? 'alta'}`); releaseScope(`nivel-${props.nivel.numero}-lite`)
   document.removeEventListener('visibilitychange', motor.reiniciarReferencia)
   motor.destruir()
 })
@@ -384,6 +468,22 @@ onBeforeUnmount(() => {
 .retro b { color: #ffd88a; margin-right: .3em; }
 .aviso-calidad { padding: .4rem .6rem; border: 1px solid #b3955c; border-radius: 6px; background: #1b2635; }
 .boton-pausa { min-height: 44px; }
+.rapidas-combate { margin-left: auto; }
+.pausa-ajustes { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.pausa-caja { max-height: 92%; overflow-y: auto; }
+.ver-resultados { position: absolute; z-index: 40; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); min-height: 44px; padding: 0 1.4rem; color: #2a1d08; background: #ffe09a; border: 1px solid #ffe09a; border-radius: 8px; font: 700 1rem system-ui, sans-serif; cursor: pointer; box-shadow: 0 6px 20px #000a; }
+.ver-resultados:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+/* Retroalimentación compacta: ocupa poco, el detalle se pliega y «Siguiente» no se mueve */
+.panel.revision { display: flex; flex-direction: column; gap: .4rem; max-height: 44%; overflow: hidden; }
+.rv-cuerpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.rv-cabeza { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .6rem; margin: 0 0 .15rem; }
+.rv-ok { color: #8fe0b0; } .rv-mal { color: #ff9d90; }
+.rv-cons { color: #ffe09a; font-size: .92em; }
+.rv-expl { margin: .1rem 0; font-size: .95em; line-height: 1.35; }
+.rv-mas { margin: .25rem 0; font-size: .9em; }
+.rv-mas summary { min-height: 32px; cursor: pointer; color: #ffe09a; }
+.rv-siguiente { flex: none; min-height: 44px; }
+@media (orientation: landscape) and (max-height: 520px) { h1 small { display: none; } .cabecera :deep(.v-btn) { min-height: 36px; } .panel.revision { max-height: 56%; } }
 /* El combate mide exactamente la pantalla visible: cabecera arriba, panel abajo
    y la arena ocupa todo lo que sobra. Así nunca aparece scroll en la página. */
 .desafio {

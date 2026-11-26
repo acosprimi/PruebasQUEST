@@ -79,12 +79,14 @@ g.parar()
 ok(g.bloqueo.value==='','tocar cuando ya terminó no hace nada')
 g.siguiente()
 // 6) Furia ×1,5 (debilidad del nivel 1: hachazo +4)
-ok(g.fuerza(g.ataques[0])===42,'con furia llena el hachazo hace 42 ((24+4)×1,5)')
+const plano = () => g.planDano().find((x) => x.indice === g.indice.value).dano
+ok(g.fuerza(g.ataques[0]) === Math.round(Math.round(plano() * 1.15) * 1.5), 'con furia llena el hachazo hace el daño planificado de la ronda ×1,15 (debilidad) ×1,5')
+ok(g.planDano().every((x, i, a) => i === 0 || x.dano >= a[i - 1].dano) && g.planDano().at(-1).dano > g.planDano()[0].dano * 2, 'el daño planificado crece ronda a ronda y el último golpe es el mayor')
 g.vidaRival.value = 100
 g.responder(nivel.preguntas[3].correcta)
 const antes = g.vidaRival.value
 g.atacar(g.ataques[0]); g.impactar()
-ok(antes - g.vidaRival.value===42 && g.furia.value===0,'el ataque con furia quita 42 y gasta la furia')
+ok(antes - g.vidaRival.value === Math.round(Math.round(plano() * 1.15) * 1.5) && g.furia.value === 0, 'el ataque con furia quita el daño con bono y gasta la furia')
 g.terminarAtaque()
 // ronda 4 es de hacha: sin contraataque
 ok(g.rondaHacha.value===true && g.fase.value==='revision','en la ronda del hacha no hay contraataque')

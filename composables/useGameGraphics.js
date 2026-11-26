@@ -30,13 +30,13 @@ export function useGameGraphics() {
 
   // Cambiar de perfil invalida las precargas pendientes y libera las imágenes del perfil anterior
   // (las del nuevo se preparan al necesitarlas). El progreso educativo no se toca.
-  function setQuality(valor) {
+  function setQuality(valor, ...conservar) {
     if (!PROFILES.includes(valor)) return
     const antes = quality.value
     quality.value = valor
     recomendacion.value = null
     progreso.ajustar({ calidad: valor })
-    if (antes !== valor) assets.liberarTodoExcepto()
+    if (antes !== valor) assets.liberarTodoExcepto(...conservar)
   }
 
   // Recomendación de un perfil inferior (llega desde useFramePacing): solo se ofrece, nunca se aplica sola.
@@ -63,7 +63,7 @@ export function useGameGraphics() {
   function levelPriorities(level, profile = quality.value) { return recursosPorPrioridad(level, profile) }
   function levelBackground(level, profile = quality.value) { return fondoNivel(level, profile) }
   function releaseScope(nombre) { assets.liberarAmbito(nombre) }
-  function releaseLevelsExcept(numero) { for (let i = 1; i <= 4; i++) if (i !== numero) assets.liberarAmbito(`nivel-${i}`) }
+  function releaseLevelsExcept(numero) { for (let i = 1; i <= 5; i++) if (i !== numero) assets.liberarAmbito(`nivel-${i}`) }
 
   return {
     quality, qualityMode: quality, modoCalidad: quality, introSeen, preferencesLoaded, recomendacion, preparacion, assets, t,

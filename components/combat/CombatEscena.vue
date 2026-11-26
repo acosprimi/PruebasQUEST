@@ -1,5 +1,5 @@
 <template>
-  <div class="escenario" :class="[`nivel-${nivel.numero}`, { urgente, 'arena-esquiva': posicionEsquiva !== null, 'esquiva-exitosa': ataque?.esquivado }]" :style="{ '--fondo': `url('${levelBackground(nivel)}')`, '--carga': carga ?? 0, '--posicion-esquiva': posicionEsquiva === null ? null : posicionEsquiva + '%' }">
+  <div class="escenario" :class="[`nivel-${(nivel.numeroArte ?? nivel.numero)}`, { urgente, 'arena-esquiva': posicionEsquiva !== null, 'esquiva-exitosa': ataque?.esquivado }]" :style="{ '--fondo': `url('${levelBackground(nivel)}')`, '--carga': carga ?? 0, '--posicion-esquiva': posicionEsquiva === null ? null : posicionEsquiva + '%' }">
     <div class="secuencia" :class="[ataque?.id, ataque?.final && ataque.remate, { activa: ataque, 'esperando-audio': esperaSolar, magia: ataque?.magia, final: ataque?.final, urgente, congelado, oculta }]" :style="tiempos"
       @animationend.self="emit('terminar')">
       <span class="ambiente" aria-hidden="true">
@@ -26,7 +26,7 @@
             :class="pose" :style="estiloPose(carpetaGuardian, pose)"
             :src="poseUrl(nivel.arte, pose)" alt="" draggable="false" />
           <!-- Chorro (veneno / aliento): nace en la boca del sprite «ataque» y viaja con el jefe, sin depender del tamaño de la escena -->
-          <img v-if="ataqueRival && chorro && !ladoGolpe" class="chorro" :style="estiloPose(carpetaGuardian, 'ataque')" :class="`chorro-${nivel.numero}`" :src="imageUrl(chorro)" alt="" draggable="false" />
+          <img v-if="ataqueRival && chorro && !ladoGolpe" class="chorro" :style="estiloPose(carpetaGuardian, 'ataque')" :class="`chorro-${(nivel.numeroArte ?? nivel.numero)}`" :src="imageUrl(chorro)" alt="" draggable="false" />
           <span class="onda-suelo" aria-hidden="true" />
           <span class="particulas-carga" aria-hidden="true">
             <span v-for="(p, i) in particulasCarga" :key="i" class="p" :style="p" />
@@ -73,7 +73,7 @@
             <span class="advertencia-coletazo" />
             <img :src="nivel.efecto" alt="" />
           </div>
-          <CombatEfectos v-else-if="!ataque.remate" :class="`nivel-${nivel.numero}`" :nivel="nivel.numero" :ataque="ataque" :estela="efecto"
+          <CombatEfectos v-else-if="!ataque.remate" :class="`nivel-${(nivel.numeroArte ?? nivel.numero)}`" :nivel="(nivel.numeroArte ?? nivel.numero)" :ataque="ataque" :estela="efecto"
             :dano="bloqueando ? null : danoAplicado" :curacion="curacion" />
         </template>
       </div>
@@ -182,7 +182,7 @@ onBeforeUnmount(() => colaPoses.abort())
 const carpetaGuardian = computed(() => props.nivel.arte.split('/').pop())
 // Los jefes 2 y 4 lanzan un chorro desde la boca; el 1 lanza una bola (se dibuja en CombatEfectos) y el 3 invoca un rayo.
 const chorros = { 2: '/images/jefes/rio/ola-venenosa.png', 4: '/images/jefes/real/aliento-fuego.png' }
-const chorro = computed(() => chorros[props.nivel.numero])
+const chorro = computed(() => chorros[(props.nivel.numeroArte ?? props.nivel.numero)])
 // Una unidad equivale a la raíz del área opaca (suma de alfa / 255) de cada archivo.
 // El centro y el margen bajo la silueta se miden en esas mismas unidades.
 function estiloPose(personaje, pose) {

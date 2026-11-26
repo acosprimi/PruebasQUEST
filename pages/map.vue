@@ -3,7 +3,7 @@
     <!-- Una pista por pantalla: el key obliga a desmontar una y montar la otra al cambiar. -->
     <AudioMusicaHome v-if="pantalla === 'mapa'" key="musica-mapa" ruta="/audio/Mapa.mp3" />
     <AudioMusicaHome v-else :key="`musica-combate-${nivelActual?.numero}`"
-      :ruta="`/audio/combate/batalla-${nivelActual?.numero ?? 1}.mp3`" :volumen="0.4" />
+      :ruta="`/audio/combate/batalla-${nivelActual?.numeroArte ?? nivelActual?.numero ?? 1}.mp3`" :volumen="0.4" />
     <section v-if="pantalla === 'mapa'" class="reino">
       <div class="contenido">
         <header class="cabecera-mapa">
@@ -11,18 +11,14 @@
             <v-btn to="/" variant="text" color="amber-lighten-3" class="volver">{{ t('Volver al inicio') }}</v-btn>
           </AudioSonidoBoton>
 
-          <v-btn v-if="pantallaCompletaDisponible" variant="tonal" size="small" class="boton-pantalla"
-            :aria-pressed="pantallaCompleta" @click="alternarPantalla">
-            {{ t(pantallaCompleta ? 'Salir de pantalla completa' : 'Pantalla completa') }}
-          </v-btn>
+          <v-btn variant="tonal" size="small" class="boton-opciones" @click="irContenidos">{{ t('Contenidos') }}</v-btn>
           <v-btn variant="tonal" size="small" class="boton-opciones" @click="showOptions = true">{{ t('Opciones') }}</v-btn>
-          <v-btn variant="tonal" size="small" class="boton-opciones" @click="verLecciones = true">{{ t('Pergaminos') }}</v-btn>
           <v-btn variant="tonal" size="small" class="boton-opciones" @click="verEstadisticas = true">{{ t('Estadísticas') }}</v-btn>
+          <UiOpcionesRapidas class="rapidas-mapa" />
           <h1>{{ t('Mapa del Reino') }}</h1>
           <p>{{ t('Sigue el camino dorado. Toca un marcador para entrar en la zona.') }}</p>
-          <p v-if="nivelDesbloqueado > niveles.length" class="conquista">{{ t('Completaste las cuatro zonas del reino.') }}</p>
+          <p v-if="nivelDesbloqueado > niveles.length" class="conquista">{{ t('Completaste todas las zonas del reino.') }}</p>
         </header>
-        <p v-if="avisoPantalla" role="status">{{ t('El navegador no pudo cambiar la pantalla completa.') }}</p>
         <!-- El tablero se escala para caber completo en el espacio que queda (sin scroll) -->
         <aside v-if="recomendacion" role="status">
           {{ t('El juego ha perdido fluidez. ¿Quieres usar una calidad gráfica inferior?') }}
@@ -42,12 +38,14 @@
       :nivel="nivelActual"
       @victoria="desbloquear"
       @volver="volverAlMapa"
+      @reforzar="reforzar"
+      @menu="irAlMenu"
       @reintentar="reintentar"
     />
 
-    <LessonsLessonScroll v-if="verLecciones" :desbloqueado="nivelDesbloqueado > niveles.length ? niveles.length : nivelDesbloqueado" @cerrar="verLecciones = false" />
-    <LessonsLessonScroll v-if="leccionPrevia" :nivel="leccionPrevia" previa :desbloqueado="leccionPrevia"
-      @terminar="comenzarTrasLeccion" @cerrar="leccionPrevia = null" />
+    <!-- Ficha de misión: informa, permite repasar o iniciar. No hay lecciones ni preguntas obligatorias antes del combate. -->
+    <MapMisionFicha v-if="ficha" :nivel="ficha" :info="infoFicha" :bloqueada="ficha.numero > nivelDesbloqueado"
+      @cerrar="ficha = null" @repasar="repasarDesdeFicha" @iniciar="iniciarDesdeFicha" />
     <ProgressProgressPanel v-if="verEstadisticas" @cerrar="verEstadisticas = false" @practicar="verEstadisticas = false; practicando = true" />
     <ProgressPracticePanel v-if="practicando" @cerrar="practicando = false" />
 
@@ -63,14 +61,14 @@
 
 <script setup>
 import nivelesBase from '~/data/niveles.json'
+import contenidos from '~/data/contenidos.json'
 
 const { language, t, translateContent } = useLanguage()
 const { loadPreferences, quality, modoCalidad, recomendacion, aplicarRecomendacion, descartarRecomendacion, releaseScope, releaseLevelsExcept } = useGameGraphics()
 const progreso = usePlayerProgress()
-const verLecciones = ref(false)
+const ficha = ref(null)
 const verEstadisticas = ref(false)
 const practicando = ref(false)
-const leccionPrevia = ref(null)
 const juego = ref(null)
 const pantallaCompleta = ref(false)
 const pantallaCompletaDisponible = ref(false)
@@ -109,8 +107,12 @@ const showOptions = ref(false)
 // Mide la fluidez mientras se juega (solo con Alta). Solo RECOMIENDA Lite: la elección del jugador se respeta.
 useFramePacing(computed(() => !enTransicion.value && quality.value !== 'lite'))
 
+const ruta = useRoute()
 onMounted(() => {
   loadPreferences()
+  // Al volver desde la biblioteca se retoma la misma misión
+  const n = Number(ruta.query.mision)
+  if (n) { const nivel = niveles.value.find((z) => z.numero === n); if (nivel) ficha.value = nivel }
 })
 
 const niveles = computed(() => language.value === 'en'
@@ -118,24 +120,40 @@ const niveles = computed(() => language.value === 'en'
   : nivelesBase)
 
 function entrar(numero) {
-  if (numero > nivelDesbloqueado.value || enTransicion.value) return
+  if (enTransicion.value) return
   const nivel = niveles.value.find((zona) => zona.numero === numero)
-  if (!nivel) return
-
+  if (nivel) ficha.value = nivel
+}
+const infoFicha = computed(() => {
+  const n = ficha.value?.numero
+  if (!n) return { descripcion: '', conocimientos: [] }
+  return n === 5 ? contenidos.final.mision : contenidos.temas.find((x) => x.nivel === n)?.mision ?? { descripcion: '', conocimientos: [] }
+})
+function reforzar(n) {
+  // Lleva directamente a la temática que conviene repasar (y permite volver a la misma misión)
+  const tema = Number(n) || 1
+  const origen = nivelActual.value?.numero ?? tema
+  volverAlMapa()
+  navigateTo(`/biblioteca?desde=mision&mision=${origen}&tema=${tema}`)
+}
+function irAlMenu() { volverAlMapa(); navigateTo('/') }
+function irContenidos() { navigateTo('/biblioteca?desde=mapa') }
+function repasarDesdeFicha() {
+  const n = ficha.value.numero
+  navigateTo(`/biblioteca?desde=mision&mision=${n}&tema=${n === 5 ? 'final' : n}`)
+}
+function iniciarDesdeFicha() {
+  const nivel = ficha.value
+  if (!nivel || nivel.numero > nivelDesbloqueado.value) return
   nivelSeleccionado.value = nivel
-  // Cada batalla empieza con un pergamino breve; se puede omitir y volver a consultar desde el mapa.
-  leccionPrevia.value = numero
+  ficha.value = null
+  enTransicion.value = true
 }
 // Cancelar la transición invalida las precargas del nivel que aún no se va a jugar.
 function cancelarTransicion() {
   enTransicion.value = false
   if (nivelSeleccionado.value) releaseScope(`nivel-${nivelSeleccionado.value.numero}`)
 }
-function comenzarTrasLeccion() {
-  leccionPrevia.value = null
-  enTransicion.value = true
-}
-
 // Cada ronda puede tener «variantes»: en cada intento se sortea una, distinta de la anterior.
 const ultimaVariante = {}
 function prepararNivel(nivel) {

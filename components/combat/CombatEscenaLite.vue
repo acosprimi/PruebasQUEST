@@ -1,5 +1,5 @@
 <template>
-  <div class="escenario" :class="[`nivel-${nivel.numero}`, { urgente, 'arena-esquiva': posicionEsquiva !== null }]"
+  <div class="escenario" :class="[`nivel-${(nivel.numeroArte ?? nivel.numero)}`, { urgente, 'arena-esquiva': posicionEsquiva !== null }]"
     :style="{ '--fondo': `url('${fondo}')`, '--carga': carga ?? 0, '--pe': posicionEsquiva ?? 0 }">
     <!-- Escena Lite: fondo estático, una sola pose visible por luchador y animaciones de transform/opacity.
          Comparte con la escena completa las mismas reglas (CombatEngine), props, eventos y ranura de actividad. -->
@@ -15,7 +15,7 @@
         <div class="luchador guardian" data-destino-palabra="monstruo" :class="claseGuardian" role="img" :aria-label="nivel.guardian">
           <span v-if="enfurecido" class="aura-lite ira" />
           <img v-if="visual.guardian" class="pose" :style="visual.guardian.estilo" :src="visual.guardian.src" :width="visual.guardian.ancho" :height="visual.guardian.alto" alt="" draggable="false" />
-          <img v-if="ataqueRival && chorro && !ladoGolpe" class="chorro" :class="`chorro-${nivel.numero}`" :style="estiloPose(carpetaGuardian, 'ataque')" :src="srcChorro" alt="" draggable="false" />
+          <img v-if="ataqueRival && chorro && !ladoGolpe" class="chorro" :class="`chorro-${(nivel.numeroArte ?? nivel.numero)}`" :style="estiloPose(carpetaGuardian, 'ataque')" :src="srcChorro" alt="" draggable="false" />
         </div>
         <span v-if="ataque?.final" class="rotulo-final">{{ ataque.nombre }}</span>
         <template v-if="ataque">
@@ -23,7 +23,7 @@
             <span class="advertencia-coletazo" />
             <img :src="nivel.efecto" alt="" />
           </div>
-          <CombatEfectosLite v-else-if="!ataque.remate" :nivel="nivel.numero" :ataque="ataque" :estela="efecto"
+          <CombatEfectosLite v-else-if="!ataque.remate" :nivel="(nivel.numeroArte ?? nivel.numero)" :ataque="ataque" :estela="efecto"
             :dano="bloqueando ? null : danoAplicado" :curacion="curacion" />
           <span v-else-if="remateCruzado" class="tajos"><i /><i /></span>
         </template>
@@ -67,7 +67,7 @@ const ruta = (carpeta, pose) => `${carpeta}/${pose}.${NUEVAS.has(pose) ? 'webp' 
 const fondo = computed(() => levelBackground(props.nivel, 'lite'))
 const carpetaGuardian = computed(() => props.nivel.arte.split('/').pop())
 const chorros = { 2: '/images/jefes/rio/ola-venenosa.png', 4: '/images/jefes/real/aliento-fuego.png' }
-const chorro = computed(() => chorros[props.nivel.numero])
+const chorro = computed(() => chorros[(props.nivel.numeroArte ?? props.nivel.numero)])
 // Medidas de data/medidas-poses.json. Si una pose no tuviera medida se usa la de reposo (nunca se rompe el render).
 function estiloPose(personaje, pose) {
   const m = medidasPoses[personaje]?.[pose] ?? medidasPoses[personaje]?.reposo ?? { ancho: 1, centro: 0.5, margenInferior: 0 }
